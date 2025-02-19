@@ -1,0 +1,135 @@
+An attacker might use a variety of shell-scripted techniques to cover their tracks after compromising a system. These methods generally aim to remove evidence of their presence and activity, such as log entries, history files, and other indicators of their actions. Below are some common shell-scripted methods an attacker might use to hide their tracks before leaving a system:
+
+1. Clearing Command History (.bash_history, .zsh_history)
+Attackers often clear their shell history to erase traces of the commands they executed. Shells like bash and zsh store user command histories in files such as .bash_history and .zsh_history. These can be deleted or emptied.
+
+# Clear the history in the current session
+history -c    # Clears the current session's history
+history -w    # Writes the (now empty) history to the history file
+
+# Delete the history file itself
+> ~/.bash_history
+> ~/.zsh_history
+
+# Remove the history file completely
+rm ~/.bash_history ~/.zsh_history
+
+2. Disabling History Logging
+Attackers can prevent their commands from being logged in the shell history by setting the HISTFILE environment variable to /dev/null or modifying shell settings to avoid saving history.
+
+# Disable saving history in the current session
+unset HISTFILE
+
+# Disable history entirely
+export HISTSIZE=0
+export HISTFILESIZE=0
+This prevents any commands run in that session from being saved to the .bash_history file.
+
+3. Modifying or Deleting Log Files
+System logs are a prime target for attackers, as they contain a wealth of information about what happened on the system. Logs such as auth.log, secure, messages, and syslog are frequently tampered with.
+
+Find and Zero Out Log Files: Attackers can use find commands to identify and empty log files across the system, similar to the script we discussed earlier:
+
+find /var/log -type f -exec truncate -s 0 {} \;
+Remove Specific Log Entries: If the attacker knows the time window during which they were active, they can remove only the relevant entries from log files using tools like sed or awk:
+
+# Remove log entries for a specific time window
+sed -i '/Aug 11 12:34:56/d' /var/log/auth.log
+4. Clearing utmp, wtmp, and lastlog Files
+These files record user logins, logouts, and login attempts. Attackers will often clear or modify these to hide evidence of their presence.
+
+utmp: Contains the current logged-in users.
+wtmp: Records all login and logout events.
+lastlog: Keeps track of the most recent login of each user.
+Attackers might use the following commands to clear these files:
+
+> /var/run/utmp
+> /var/log/wtmp
+> /var/log/lastlog
+This method wipes the records of user sessions and login history, making it harder to track when the attacker logged in and out.
+
+5. Editing bashrc to Disable History Logging Persistently
+Attackers might modify shell startup files such as .bashrc to permanently disable history logging for specific users or globally.
+
+# Add these lines to ~/.bashrc to disable history logging
+export HISTFILE=/dev/null
+export HISTSIZE=0
+export HISTFILESIZE=0
+This ensures that even if the system is rebooted, command history will not be recorded in future sessions.
+
+6. Using shred to Permanently Delete Files
+Instead of just deleting files, an attacker can use shred to overwrite the file content before deleting it, making recovery much more difficult.
+
+shred -u /var/log/auth.log  # Overwrite and then delete the file
+The -u flag tells shred to unlink (delete) the file after overwriting it, preventing forensic recovery of the data.
+
+7. Clearing Systemd Journals
+On systems using systemd, logs are stored in binary format via the journalctl system. Attackers can clear these logs using the journalctl command.
+
+# Clear all systemd logs
+journalctl --rotate
+journalctl --vacuum-time=1s
+--rotate forces the rotation of log files, and --vacuum-time=1s removes logs older than 1 second, effectively clearing them.
+
+8. Tampering with the auditd Logs
+If the system uses auditd for logging, attackers may attempt to clear or disable auditing:
+
+Stop the audit daemon:
+
+service auditd stop
+Clear audit logs:
+
+> /var/log/audit/audit.log
+Disable auditd to prevent further auditing:
+
+systemctl stop auditd
+systemctl disable auditd
+
+9. Manipulating Timestamps with touch
+Attackers can alter the timestamps of files they accessed or modified using the touch command to make their activity appear to have happened at a different time.
+
+# Change access and modification times to an earlier date
+touch -t 202308101200 /var/log/auth.log
+This would make it appear as if the log file was last modified at noon on August 10, 2023, even if it was modified later.
+
+10. Removing Crontab Entries
+If the attacker set up malicious cron jobs to maintain persistence, they may remove them before leaving to cover their tracks.
+
+# List the user's cron jobs
+crontab -l
+
+# Remove all cron jobs
+crontab -r
+For system-wide cron jobs, they might modify or delete entries in /etc/cron.d/ or /etc/crontab.
+
+11. Rootkit Installation
+Some attackers will install rootkits that hide their activity. These rootkits can make files, processes, and even network connections invisible to system administrators or logging systems. A common tool for this is rkhunter (Rootkit Hunter), but an attacker using rootkits can go further by hiding their actions from standard tools like ps, netstat, and ls.
+
+Rootkits often modify the behavior of system commands like ls, ps, or netstat to hide their presence.
+
+12. Removing Bash Session Files
+Bash keeps a record of the terminal sessions (especially when using screen or tmux), and attackers may attempt to delete these session files:
+
+# Remove bash session files
+rm -f /tmp/*session*
+
+13. Wiping /tmp and /var/tmp
+Many attackers use /tmp or /var/tmp directories to store temporary scripts or tools. They can simply delete these files after they are done to clean up any temporary traces:
+
+rm -rf /tmp/*
+rm -rf /var/tmp/*
+
+14. Disabling or Editing Logs in /etc/rsyslog.conf
+Attackers may edit the configuration file for rsyslog to disable logging or to stop logging specific activities that might expose their actions:
+
+# Disable logging for auth
+sed -i 's/^auth,authpriv.*/#auth,authpriv/g' /etc/rsyslog.conf
+
+# Restart the logging service
+systemctl restart rsyslog
+This method would prevent certain logs from being recorded in the first place.
+
+Mitigations and Defenses Against Track-Covering Techniques
+Centralized Logging: Use a remote, centralized logging server to collect logs so that attackers cannot easily access and delete them. Immutable Logs: Use chattr +i to make log files and history files immutable, making it difficult for attackers to modify or delete them. Auditd: Enable and monitor auditd to track file accesses and changes.
+
+Intrusion Detection Systems (IDS): Use systems like OSSEC, Tripwire, or AIDE to detect file changes and modifications in real-time. System Integrity Checking: Regularly check system integrity using tools like Tripwire to detect changes to critical files. By understanding the tactics attackers use to hide their tracks, you can better secure your system and implement proactive monitoring and auditing to detect and mitigate malicious activity.

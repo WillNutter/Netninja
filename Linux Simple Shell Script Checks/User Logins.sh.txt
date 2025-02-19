@@ -1,0 +1,28 @@
+chmod +x detect_logins.sh
+./detect_logins.sh
+
+To Automate - in CRON
+0 0 * * * /path/to/detect_logins.sh
+
+
+
+#!/bin/bash
+
+# Define the output report file
+REPORT_FILE="/path/to/user_login_report.txt"
+
+# Start the report with header information
+echo "User Login Report - Generated on $(date)" > "$REPORT_FILE"
+echo "------------------------------------------------" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# Get user login details using the 'last' command
+# This command shows a list of the last logins, including user, terminal, and IP
+last | grep -v "reboot" | grep -v "wtmp begins" >> "$REPORT_FILE"
+
+# Check if the report was successfully generated
+if [ $? -eq 0 ]; then
+    echo "Report generated successfully. Check $REPORT_FILE"
+else
+    echo "No login records found."
+fi

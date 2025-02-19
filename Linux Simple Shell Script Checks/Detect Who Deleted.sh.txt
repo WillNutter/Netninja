@@ -1,0 +1,32 @@
+sudo apt-get install auditd audispd-plugins
+sudo yum install audit
+sudo nano /etc/audit/rules.d/audit.rules
+-w /path/to/watch -p wa -k file_deletion
+-w /home -p wa -k file_deletion
+sudo systemctl restart auditd
+sudo ausearch -k file_deletion
+
+
+chmod +x generate_deletion_report.sh
+./generate_deletion_report.sh
+
+
+#!/bin/bash
+
+# Define the output report file
+REPORT_FILE="/path/to/file_deletion_report.txt"
+
+# Start the report with header information
+echo "File Deletion Report - Generated on $(date)" > "$REPORT_FILE"
+echo "------------------------------------------------------" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# Search audit logs for file deletions (using the key 'file_deletion')
+ausearch -k file_deletion | grep 'unlink' >> "$REPORT_FILE"
+
+# Check if the report was successfully generated
+if [ $? -eq 0 ]; then
+    echo "Report generated successfully. Check $REPORT_FILE"
+else
+    echo "No file deletions found in audit logs."
+fi

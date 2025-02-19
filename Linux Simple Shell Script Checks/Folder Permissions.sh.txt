@@ -1,0 +1,29 @@
+chmod +x check_unusual_permissions.sh
+./check_unusual_permissions.sh
+
+
+#!/bin/bash
+
+# Output file for the report
+REPORT_FILE="/path/to/unusual_permissions_report.txt"
+
+# Start the report with some header information
+echo "Unusual Folder Permissions Report - Generated on $(date)" > "$REPORT_FILE"
+echo "-----------------------------------------------------------" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# Directory to check (default is root, you can change it)
+START_DIR="/"
+
+# Find directories with unusual permissions
+echo "Scanning directories with unusual permissions in $START_DIR..." >> "$REPORT_FILE"
+
+# Find directories with permissions like 777, 777, 775, 777, etc.
+find $START_DIR -type d \( -perm -777 -o -perm -777 -o -perm -775 \) -exec ls -ld {} \; >> "$REPORT_FILE"
+
+# Log that the script finished
+echo "" >> "$REPORT_FILE"
+echo "Scan complete." >> "$REPORT_FILE"
+
+# Inform the user of the report location
+echo "Report generated: $REPORT_FILE"

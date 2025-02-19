@@ -1,0 +1,28 @@
+sudo apt-get install ldap-utils
+sudo yum install openldap-clients
+
+
+#!/bin/bash
+
+# Define LDAP server and domain information
+LDAP_SERVER="ldap://your-ldap-server.example.com"   # Replace with your AD LDAP server address
+LDAP_BASE="dc=example,dc=com"                        # Replace with your AD base DN (e.g., dc=domain,dc=com)
+LDAP_BIND_USER="username@example.com"                # Replace with your LDAP bind DN (usually user@domain)
+LDAP_BIND_PASS="yourpassword"                        # Replace with your LDAP password
+
+# Define the output file path
+OUTPUT_FILE="/path/to/output_users.txt"               # Path to save the exported users
+
+# Define the LDAP query to retrieve all users
+LDAP_QUERY="(&(objectClass=user)(objectCategory=person))"
+
+# Export users from Active Directory using ldapsearch
+echo "Exporting users from AD..."
+ldapsearch -x -H "$LDAP_SERVER" -D "$LDAP_BIND_USER" -w "$LDAP_BIND_PASS" -b "$LDAP_BASE" "$LDAP_QUERY" cn mail > "$OUTPUT_FILE"
+
+# Check if the export was successful
+if [ $? -eq 0 ]; then
+    echo "Export completed successfully. Users have been saved to $OUTPUT_FILE"
+else
+    echo "Error: Unable to export users from AD."
+fi

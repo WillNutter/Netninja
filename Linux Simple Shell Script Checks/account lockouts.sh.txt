@@ -1,0 +1,33 @@
+chmod +x detect_lockouts.sh
+./detect_lockouts.sh
+
+To Automate - in CRON
+0 0 * * * /path/to/detect_lockouts.sh
+
+
+#!/bin/bash
+
+# Define the log file to check (Debian/Ubuntu: /var/log/auth.log, RHEL/CentOS: /var/log/secure)
+LOG_FILE="/var/log/auth.log"  # Modify this for your system (use /var/log/secure on RHEL/CentOS)
+REPORT_FILE="/path/to/account_lockout_report.txt"
+
+# Start the report with some header information
+echo "Account Lockout Report - Generated on $(date)" > "$REPORT_FILE"
+echo "------------------------------------------------" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# Check if the log file exists
+if [ ! -f "$LOG_FILE" ]; then
+    echo "Error: Log file $LOG_FILE not found. Please check your system." >> "$REPORT_FILE"
+    exit 1
+fi
+
+# Search for failed login attempts and account lockouts in the log file
+# We look for lines indicating a lockout or failure
+echo "Searching for failed login attempts and account lockouts..." >> "$REPORT_FILE"
+grep -i "failed password" "$LOG_FILE" | grep -i "for" >> "$REPORT_FILE" # Failed logins
+grep -i "account temporarily locked" "$LOG_FILE" >> "$REPORT_FILE"  # Lockout events
+
+# Inform the user
+echo "" >> "$REPORT_FILE"
+echo "Scan complete. Check $REPORT_FILE for the results."

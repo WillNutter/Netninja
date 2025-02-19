@@ -1,0 +1,11 @@
+#!/bin/sh
+Score=$1
+if [ $Score -lt 20 ]; then
+  echo "Please try again"
+elif [ $Score -lt 50 ]; then
+  echo "Nice try almost there"
+elif [ $Score -lt 70 ]; then
+  echo "Well done you passed"
+else
+  echo "You are a genius"
+fi

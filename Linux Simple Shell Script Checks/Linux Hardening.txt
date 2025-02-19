@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# List of services to disable
+services=("apache2" "vsftpd" "telnet" "ftp")
+
+for service in "${services[@]}"; do
+    systemctl stop $service
+    systemctl disable $service
+    echo "Disabled $service"
+done

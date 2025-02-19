@@ -1,0 +1,71 @@
+import os
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+
+def generate_aes_key():
+    # Generate AES key
+    key = os.urandom(32)  # 256-bit key
+    with open('aes_key.key', 'wb') as f:
+        f.write(key)
+
+def aes_encrypt(key, plaintext):
+    # Encrypt plaintext with AES key
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=backend)
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    return ciphertext
+
+def aes_decrypt(key, ciphertext):
+    # Decrypt ciphertext with AES key
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=backend)
+    decryptor = cipher.decryptor()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    return plaintext
+
+def encrypt_file(key, file_path):
+    # Read file content
+    with open(file_path, 'rb') as f:
+        plaintext = f.read()
+    # Encrypt file content
+    ciphertext = aes_encrypt(key, plaintext)
+    # Write encrypted content back to file
+    with open(file_path, 'wb') as f:
+        f.write(ciphertext)
+    print(f"Encrypted: {file_path}")
+
+def decrypt_file(key, file_path):
+    # Read encrypted file content
+    with open(file_path, 'rb') as f:
+        ciphertext = f.read()
+    # Decrypt file content
+    plaintext = aes_decrypt(key, ciphertext)
+    # Write decrypted content back to file
+    with open(file_path, 'wb') as f:
+        f.write(plaintext)
+    print(f"Decrypted: {file_path}")
+
+def encrypt_files_recursively(directory, key):
+    # Recursively encrypt files in directory
+    for root, _, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            encrypt_file(key, file_path)
+
+def decrypt_files_recursively(directory, key):
+    # Recursively decrypt files in directory
+    for root, _, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            decrypt_file(key, file_path)
+
+# Generate AES key
+generate_aes_key()
+
+# Example usage:
+# Encrypt files recursively in a directory
+encrypt_files_recursively('C:\\Path\\To\\Directory', key)
+
+# Decrypt files recursively in a directory
+decrypt_files_recursively('C:\\Path\\To\\Directory', key)

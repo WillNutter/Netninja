@@ -1,0 +1,27 @@
+def multiplicative_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using a multiplicative cipher and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    
+    def encrypt_char(char):
+        if char.isalpha():
+            is_upper = char.isupper()
+            idx = alphabet.index(char.upper())
+            encrypted_idx = (idx * key) % 26
+            return alphabet[encrypted_idx] if is_upper else alphabet[encrypted_idx].lower()
+        return char
+
+    encrypted_message = ''.join(encrypt_char(c) for c in message)
+    
+    with open(output_file, 'w') as file:
+        file.write(encrypted_message)
+
+# Example key
+key = 7
+
+# Encrypt message from input file and save to output file
+multiplicative_encrypt('input.txt', 'encrypted.txt', key)

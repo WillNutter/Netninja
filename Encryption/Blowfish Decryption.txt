@@ -1,0 +1,26 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import Blowfish
+from Crypto.Util.Padding import unpad
+import base64
+
+def blowfish_decrypt(input_file, output_file, key):
+    """
+    Decrypt a Blowfish-encrypted message from input file and save to output file.
+    """
+    with open(input_file, 'rb') as file:
+        encrypted_message = base64.b64decode(file.read())
+    
+    key_bytes = key.encode('utf-8')
+    iv = encrypted_message[:Blowfish.block_size]
+    cipher = Blowfish.new(key_bytes, Blowfish.MODE_CBC, iv)
+    decrypted_message = unpad(cipher.decrypt(encrypted_message[Blowfish.block_size:]), Blowfish.block_size)
+    
+    with open(output_file, 'w') as file:
+        file.write(decrypted_message.decode('utf-8'))
+
+# Example key (must be between 4 and 56 bytes long)
+key = "thisisaverysecret"
+
+# Decrypt message from input file and save to output file
+blowfish_decrypt('encrypted.bin', 'decrypted.txt', key)

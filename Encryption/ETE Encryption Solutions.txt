@@ -1,0 +1,53 @@
+To ensure your data remains encrypted at all times while accessing it on an iPhone, you can use encrypted cloud storage solutions that are compatible with iOS. Here’s how you can achieve this:
+
+### Using Cryptomator
+
+Cryptomator is an open-source encryption solution that works well with various cloud storage services and has an iOS app. Here’s how you can use it:
+
+1. **Set Up Cryptomator on Your Computer:**
+   - Download and install Cryptomator on your computer from [cryptomator.org](https://cryptomator.org/).
+   - Create a new encrypted vault within your preferred cloud storage service (e.g., Dropbox, Google Drive).
+
+2. **Upload Files to the Encrypted Vault:**
+   - Move or copy your files into the Cryptomator vault on your computer. These files are encrypted before being uploaded to the cloud.
+
+3. **Install Cryptomator on Your iPhone:**
+   - Download and install the Cryptomator app from the App Store.
+
+4. **Access Your Encrypted Vault on iPhone:**
+   - Open the Cryptomator app and connect it to the same cloud storage service where your encrypted vault is stored.
+   - Unlock the vault using your password or key.
+
+### Using Boxcryptor
+
+Boxcryptor is another encryption tool that supports multiple cloud storage providers and has an iOS app. Here's how to use it:
+
+1. **Set Up Boxcryptor on Your Computer:**
+   - Download and install Boxcryptor from [boxcryptor.com](https://www.boxcryptor.com/).
+   - Configure Boxcryptor to work with your preferred cloud storage service.
+
+2. **Encrypt Your Files:**
+   - Move or copy your files into the Boxcryptor folder. These files will be encrypted and uploaded to the cloud.
+
+3. **Install Boxcryptor on Your iPhone:**
+   - Download and install the Boxcryptor app from the App Store.
+
+4. **Access Your Encrypted Files on iPhone:**
+   - Open the Boxcryptor app and log in to your account.
+   - Access and decrypt your files directly within the app.
+
+### Using a Secure File Manager with Encrypted Support
+
+Some file managers for iOS support encrypted volumes. For instance:
+
+1. **FE File Explorer:**
+   - Mount and share the VeraCrypt volume on your computer over a secure network.
+   - Use FE File Explorer on your iPhone to connect to the shared volume. This allows you to access encrypted files directly over the network without decrypting them locally on your iPhone.
+
+2. **Documents by Readdle:**
+   - Similar to FE File Explorer, it can connect to network shares where your VeraCrypt volume is mounted on another device.
+   - This allows for secure access to your encrypted files without them being decrypted on your iPhone.
+
+### Summary
+
+Using tools like Cryptomator or Boxcryptor ensures that your data stays encrypted at all times, even when accessing it on your iPhone. Both solutions provide strong encryption and seamless integration with popular cloud storage services, allowing you to access your encrypted files securely from your iPhone.

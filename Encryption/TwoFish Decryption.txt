@@ -1,0 +1,26 @@
+#pip install pycryptodome
+
+from twofish import Twofish
+from Crypto.Util.Padding import unpad
+import base64
+
+def twofish_decrypt(input_file, output_file, key):
+    """
+    Decrypt a Twofish-encrypted message from input file and save to output file.
+    """
+    with open(input_file, 'rb') as file:
+        encrypted_message = base64.b64decode(file.read())
+    
+    key_bytes = key.encode('utf-8')
+    cipher = Twofish(key_bytes)
+    decrypted_message = b''.join([cipher.decrypt(encrypted_message[i:i+16]) for i in range(0, len(encrypted_message), 16)])
+    decrypted_message = unpad(decrypted_message, 16)
+    
+    with open(output_file, 'w') as file:
+        file.write(decrypted_message.decode('utf-8'))
+
+# Example key (must be 16 bytes long)
+key = "thisisaverysecret"
+
+# Decrypt message from input file and save to output file
+twofish_decrypt('encrypted.bin', 'decrypted.txt', key)

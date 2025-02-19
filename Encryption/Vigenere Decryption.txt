@@ -1,0 +1,31 @@
+def vigenere_decrypt(input_file, output_file, key):
+    """
+    Decrypt a message encrypted with the Vigenere cipher from input file and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        encrypted_message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    key = key.upper()
+    decrypted_message = []
+    
+    key_index = 0
+    for char in encrypted_message:
+        if char.isalpha():
+            is_upper = char.isupper()
+            idx = alphabet.index(char.upper())
+            key_idx = alphabet.index(key[key_index % len(key)])
+            decrypted_char = alphabet[(idx - key_idx + 26) % 26]
+            decrypted_message.append(decrypted_char if is_upper else decrypted_char.lower())
+            key_index += 1
+        else:
+            decrypted_message.append(char)
+
+    with open(output_file, 'w') as file:
+        file.write(''.join(decrypted_message))
+
+# Example key
+key = "LEMON"
+
+# Decrypt message from input file and save to output file
+vigenere_decrypt('encrypted.txt', 'decrypted.txt', key)

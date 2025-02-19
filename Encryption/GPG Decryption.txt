@@ -1,0 +1,18 @@
+import subprocess
+
+def gpg_decrypt(input_file, output_file):
+    """
+    Decrypt a GPG-encrypted file and save the decrypted file.
+    """
+    subprocess.run(["gpg", "--batch", "--output", output_file, "--decrypt", input_file])
+
+def main():
+    input_file = input("Enter the path of the input file to decrypt: ")
+    output_file = input("Enter the path for the decrypted output file: ")
+    
+    gpg_decrypt(input_file, output_file)
+    
+    print("Decryption completed successfully.")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,47 @@
+Here's a simple Python script that asks the user for the length of the password and the type of characters to include (hexadecimal, alphanumeric, or custom). It then generates a password based on those parameters:
+
+```python
+import string
+import random
+
+def generate_password(length, char_type):
+    if char_type == "hexadecimal":
+        chars = string.hexdigits
+    elif char_type == "alphanumeric":
+        chars = string.ascii_letters + string.digits
+    elif char_type == "custom":
+        custom_chars = input("Enter the characters you want to include in your password: ")
+        chars = custom_chars
+    else:
+        raise ValueError("Invalid character type specified.")
+    
+    return ''.join(random.choice(chars) for _ in range(length))
+
+def main():
+    while True:
+        try:
+            length = int(input("Enter the desired password length (8-4096): "))
+            if length < 8 or length > 4096:
+                raise ValueError("Password length must be between 8 and 4096 characters.")
+            break
+        except ValueError as e:
+            print(e)
+    
+    while True:
+        char_type = input("Enter the character type (hexadecimal, alphanumeric, custom): ").lower()
+        if char_type in ["hexadecimal", "alphanumeric", "custom"]:
+            break
+        else:
+            print("Invalid character type. Please enter 'hexadecimal', 'alphanumeric', or 'custom'.")
+    
+    password = generate_password(length, char_type)
+    print(f"Generated password: {password}")
+
+if __name__ == "__main__":
+    main()
+```
+
+This script will:
+1. Ask for the desired length of the password within the range of 8 to 4096 characters.
+2. Ask for the type of characters to include in the password (hexadecimal, alphanumeric, or custom).
+3. Generate and display the password based on the user's input.

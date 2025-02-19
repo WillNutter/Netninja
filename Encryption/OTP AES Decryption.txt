@@ -1,0 +1,21 @@
+from Crypto.Cipher import AES
+
+def decrypt_with_aes_ctr(input_file, output_file, key_file):
+    """
+    Decrypt a file using AES-CTR mode and save the plaintext to the output file.
+    """
+    with open(input_file, 'rb') as file:
+        ciphertext = file.read()
+    
+    with open(key_file, 'rb') as file:
+        key = file.read()
+    
+    cipher = AES.new(key, AES.MODE_CTR)
+    plaintext = cipher.decrypt(ciphertext)
+    
+    # Write the plaintext to the output file
+    with open(output_file, 'wb') as file:
+        file.write(plaintext)
+
+# Example usage: Decrypt 'encrypted.bin' using AES-CTR and save to 'decrypted.txt'
+decrypt_with_aes_ctr('encrypted.bin', 'decrypted.txt', 'key.bin')

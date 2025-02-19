@@ -1,0 +1,22 @@
+def caesar_encrypt(input_file, output_file, shift=13):
+    """
+    Encrypt a message using the Caesar cipher (default is ROT13) and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    def shift_alphabet(alphabet, shift):
+        return alphabet[shift:] + alphabet[:shift]
+
+    alphabet_upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    alphabet_lower = 'abcdefghijklmnopqrstuvwxyz'
+    shifted_upper = shift_alphabet(alphabet_upper, shift)
+    shifted_lower = shift_alphabet(alphabet_lower, shift)
+    translation_table = str.maketrans(alphabet_upper + alphabet_lower, shifted_upper + shifted_lower)
+    encrypted_message = message.translate(translation_table)
+    
+    with open(output_file, 'w') as file:
+        file.write(encrypted_message)
+
+# Encrypt message from input file and save to output file
+caesar_encrypt('input.txt', 'encrypted.txt')

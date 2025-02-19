@@ -1,0 +1,31 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+
+def encrypt_file(input_file, output_file):
+    # Generate a random key
+    key = get_random_bytes(16)  # 16 bytes for AES-128
+
+    # Initialize AES cipher with the generated key
+    cipher = AES.new(key, AES.MODE_EAX)
+
+    # Read the content of the input file
+    with open(input_file, 'rb') as file:
+        plaintext = file.read()
+
+    # Encrypt the content
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+    # Write the encrypted content to the output file
+    with open(output_file, 'wb') as file:
+        file.write(cipher.nonce)
+        file.write(tag)
+        file.write(ciphertext)
+
+    # Write the key to a separate file
+    with open('key.txt', 'wb') as file:
+        file.write(key)
+
+# Example usage
+encrypt_file('input.txt', 'encrypted_file.bin')

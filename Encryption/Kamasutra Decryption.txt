@@ -1,0 +1,20 @@
+def kamasutra_decrypt(input_file, output_file, keyword):
+    """
+    Decrypt a message encrypted with a Kamasutra cipher from input file and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        encrypted_message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    keyword_unique = ''.join(sorted(set(keyword), key=keyword.index))
+    translation_table = str.maketrans(keyword_unique + alphabet[len(keyword_unique):], alphabet)
+    decrypted_message = encrypted_message.translate(translation_table)
+    
+    with open(output_file, 'w') as file:
+        file.write(decrypted_message)
+
+# Example keyword
+keyword = "PASSWORD"
+
+# Decrypt message from input file and save to output file
+kamasutra_decrypt('encrypted.txt', 'decrypted.txt', keyword)

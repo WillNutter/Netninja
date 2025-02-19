@@ -1,0 +1,19 @@
+def monoalphabetic_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using a monoalphabetic substitution cipher and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    translation_table = str.maketrans(alphabet + alphabet.lower(), key + key.lower())
+    encrypted_message = message.translate(translation_table)
+    
+    with open(output_file, 'w') as file:
+        file.write(encrypted_message)
+
+# Example key (26 characters)
+key = "QWERTYUIOPLKJHGFDSAZXCVBNM"
+
+# Encrypt message from input file and save to output file
+monoalphabetic_encrypt('input.txt', 'encrypted.txt', key)

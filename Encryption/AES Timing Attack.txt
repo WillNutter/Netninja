@@ -1,0 +1,48 @@
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import time
+
+def encrypt_with_timing(key, plaintext):
+    # Simulated function to perform AES encryption with timing measurement
+    start_time = time.time()
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=backend)
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    end_time = time.time()
+    return ciphertext, end_time - start_time
+
+def timing_attack():
+    # Simulated AES key
+    key_length = 16  # 128-bit key
+    key = b'\x00' * key_length  # Initial guess
+
+    # Initialize the byte array to store the recovered key
+    recovered_key = bytearray(key_length)
+
+    for byte_index in range(key_length):
+        max_time = 0
+        max_time_byte = 0
+
+        # Iterate over all possible byte values (0-255)
+        for guess in range(256):
+            # Modify the guessed byte in the key
+            modified_key = bytearray(key)
+            modified_key[byte_index] = guess
+
+            # Encrypt a sample plaintext with the modified key and measure the time
+            ciphertext, execution_time = encrypt_with_timing(bytes(modified_key), b'A' * 16)
+
+            # Keep track of the byte value that results in the maximum execution time
+            if execution_time > max_time:
+                max_time = execution_time
+                max_time_byte = guess
+
+        # Update the recovered key with the byte value that results in the maximum execution time
+        recovered_key[byte_index] = max_time_byte
+
+    return bytes(recovered_key)
+
+# Perform the timing attack to recover the AES key
+recovered_key = timing_attack()
+print("Recovered AES Key:", recovered_key.hex())

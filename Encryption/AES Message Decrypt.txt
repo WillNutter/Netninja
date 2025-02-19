@@ -1,0 +1,27 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import AES
+
+def decrypt_file(encrypted_file, key_file, output_file):
+    # Read the key from the key file
+    with open(key_file, 'rb') as file:
+        key = file.read()
+
+    # Read the encrypted file
+    with open(encrypted_file, 'rb') as file:
+        nonce = file.read(16)
+        tag = file.read(16)
+        ciphertext = file.read()
+
+    # Initialize AES cipher with the key and nonce
+    cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+
+    # Decrypt the content
+    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+
+    # Write the decrypted content to the output file
+    with open(output_file, 'wb') as file:
+        file.write(plaintext)
+
+# Example usage
+decrypt_file('encrypted_file.bin', 'key.txt', 'decrypted_file.txt')

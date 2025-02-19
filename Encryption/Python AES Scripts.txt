@@ -1,0 +1,114 @@
+Python AES Scripts
+
+AES 128 Key Generation
+
+def generate_aes_128_key():
+    # Generate or load the AES-128 key from a file
+    try:
+        with open('aes_128_key.key', 'rb') as f:
+            key = f.read()
+    except FileNotFoundError:
+        # Generate a new AES-128 key if the file doesn't exist
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=16,  # Adjusted for 128-bit key length
+            salt=b'',
+            iterations=100000,
+            backend=default_backend()
+        )
+        key = kdf.derive(b'my_secret_password')
+        # Save the key to a file
+        with open('aes_128_key.key', 'wb') as f:
+            f.write(key)
+    return key
+
+AES 192 Key Generation
+
+def generate_aes_192_key():
+    # Generate or load the AES-192 key from a file
+    try:
+        with open('aes_192_key.key', 'rb') as f:
+            key = f.read()
+    except FileNotFoundError:
+        # Generate a new AES-192 key if the file doesn't exist
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=24,  # Adjusted for 192-bit key length
+            salt=b'',
+            iterations=100000,
+            backend=default_backend()
+        )
+        key = kdf.derive(b'my_secret_password')
+        # Save the key to a file
+        with open('aes_192_key.key', 'wb') as f:
+            f.write(key)
+    return key
+
+
+AES 256 Key Generation
+
+def generate_aes_key():
+    # Generate or load the AES key from a file
+    try:
+        with open('mykey.key', 'rb') as f:
+            key = f.read()
+    except FileNotFoundError:
+        # Generate a new key if the file doesn't exist
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'',
+            iterations=100000,
+            backend=default_backend()
+        )
+        key = kdf.derive(b'my_secret_password')
+        # Save the key to a file
+        with open('mykey.key', 'wb') as f:
+            f.write(key)
+    return key
+
+AES 256 File Encryption
+
+def aes_encrypt(plaintext):
+    # Load the AES key from a file
+    with open('mykey.key', 'rb') as f:
+        key = f.read()
+    # Encrypt the plaintext using the key
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=backend)
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    return ciphertext
+
+
+AES 256 File Decryption
+
+def aes_decrypt(ciphertext):
+    # Load the AES key from a file
+    with open('mykey.key', 'rb') as f:
+        key = f.read()
+    # Decrypt the ciphertext using the key
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=backend)
+    decryptor = cipher.decryptor()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    return plaintext
+
+AES 256 Cryptographic Protocol Negotiation
+
+def generate_rsa_keypair():
+    # Generate or load the RSA key pair from files
+    try:
+        with open('private_key.pem', 'rb') as f:
+            private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+        with open('public_key.pem', 'rb') as f:
+            public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
+    except FileNotFoundError:
+        # Generate new RSA key pair if files don't exist
+        private_key, public_key = rsa.generate_key_pair()
+        # Save the key pair to files
+        with open('private_key.pem', 'wb') as f:
+            f.write(private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.TraditionalOpenSSL, encryption_algorithm=serialization.NoEncryption()))
+        with open('public_key.pem', 'wb') as f:
+            f.write(public_key.public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo))
+    return private_key, public_key

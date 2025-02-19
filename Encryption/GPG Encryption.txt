@@ -1,0 +1,19 @@
+import subprocess
+
+def gpg_encrypt(input_file, output_file, recipient_key_file):
+    """
+    Encrypt a file using GPG and save the encrypted file.
+    """
+    subprocess.run(["gpg", "--batch", "--output", output_file, "--recipient-file", recipient_key_file, "--encrypt", input_file])
+
+def main():
+    input_file = input("Enter the path of the input file to encrypt: ")
+    output_file = input("Enter the path for the encrypted output file: ")
+    recipient_key_file = input("Enter the path of the recipient's public key file: ")
+    
+    gpg_encrypt(input_file, output_file, recipient_key_file)
+    
+    print("Encryption completed successfully.")
+
+if __name__ == "__main__":
+    main()

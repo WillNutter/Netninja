@@ -1,0 +1,23 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import Serpent
+from Crypto.Util.Padding import unpad
+
+def serpent_decrypt(input_file, output_file, key):
+    """
+    Decrypt a Serpent-encrypted message from input file and save to output file.
+    """
+    with open(input_file, 'rb') as file:
+        ciphertext = file.read()
+    
+    cipher = Serpent.new(key, Serpent.MODE_ECB)
+    decrypted_plaintext = unpad(cipher.decrypt(ciphertext), Serpent.block_size)
+    
+    with open(output_file, 'wb') as file:
+        file.write(decrypted_plaintext)
+
+# Example key (must be 16, 24, or 32 bytes long)
+key = b'thisisaverysecret'
+
+# Decrypt message from input file and save to output file
+serpent_decrypt('encrypted.bin', 'decrypted.txt', key)

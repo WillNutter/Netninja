@@ -1,0 +1,11 @@
+def xor_decrypt(input_file, output_file, key):
+    """
+    Decrypt a message encrypted with the XOR cipher from input file and save to output file.
+    """
+    xor_encrypt(input_file, output_file, key)  # XOR is symmetric
+
+# Example key
+key = "secret"
+
+# Decrypt message from input file and save to output file
+xor_decrypt('encrypted.txt', 'decrypted.txt', key)

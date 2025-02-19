@@ -1,0 +1,24 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import Serpent
+from Crypto.Util.Padding import pad
+import base64
+
+def serpent_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using Serpent encryption and save to output file.
+    """
+    with open(input_file, 'rb') as file:
+        plaintext = file.read()
+    
+    cipher = Serpent.new(key, Serpent.MODE_ECB)
+    ciphertext = cipher.encrypt(pad(plaintext, Serpent.block_size))
+    
+    with open(output_file, 'wb') as file:
+        file.write(ciphertext)
+
+# Example key (must be 16, 24, or 32 bytes long)
+key = b'thisisaverysecret'
+
+# Encrypt message from input file and save to output file
+serpent_encrypt('input.txt', 'encrypted.bin', key)

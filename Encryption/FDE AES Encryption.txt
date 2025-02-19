@@ -1,0 +1,49 @@
+# full disk encryption using 4096 AES
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Random import get_random_bytes
+import hashlib
+
+# Function to generate a 4096-bit AES key
+def generate_aes_key():
+    return get_random_bytes(512)
+
+# Function to derive a key from a password using SHA-256
+def derive_key(password, salt=b''):
+    return hashlib.sha256(password + salt).digest()
+
+# Function to encrypt data with AES in CBC mode
+def encrypt(data, key):
+    iv = get_random_bytes(AES.block_size)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    ciphertext = cipher.encrypt(pad(data, AES.block_size))
+    return iv + ciphertext
+
+def main():
+    input_file = input("Enter the path of the input file to encrypt: ")
+    output_file = input("Enter the path for the encrypted output file: ")
+    key_file = input("Enter the path for the key file: ")
+    
+    # Generate 4096-bit AES key
+    key = generate_aes_key()
+    
+    # Write key to key file
+    with open(key_file, 'wb') as file:
+        file.write(key)
+    
+    # Read data from input file
+    with open(input_file, 'rb') as file:
+        data = file.read()
+    
+    # Encrypt data
+    encrypted_data = encrypt(data, key)
+    
+    # Write encrypted data to output file
+    with open(output_file, 'wb') as file:
+        file.write(encrypted_data)
+    
+    print("Encryption completed successfully.")
+
+if __name__ == "__main__":
+    main()

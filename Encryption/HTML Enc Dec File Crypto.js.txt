@@ -1,0 +1,66 @@
+Certainly! Here's the modified HTML page to include encryption with key sizes of 128, 192, and 256 bits:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AES Encryption and Decryption</title>
+</head>
+<body>
+  <h1>AES Encryption and Decryption</h1>
+
+  <label for="fileInput">Choose a text file:</label>
+  <input type="file" id="fileInput" accept=".txt"><br><br>
+
+  <button onclick="encrypt(128)">Encrypt with 128-bit Key</button>
+  <button onclick="encrypt(192)">Encrypt with 192-bit Key</button>
+  <button onclick="encrypt(256)">Encrypt with 256-bit Key</button><br><br>
+
+  <h2>Initial Unencrypted State:</h2>
+  <textarea id="initialContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <h2>Encryption Key:</h2>
+  <textarea id="encryptionKey" rows="2" cols="50" readonly></textarea><br><br>
+
+  <h2>Encrypted State:</h2>
+  <textarea id="encryptedContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <h2>Decrypted State:</h2>
+  <textarea id="decryptedContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+    function readFile(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const text = event.target.result;
+        document.getElementById('initialContent').value = text;
+      };
+      reader.readAsText(file);
+    }
+
+    function encrypt(keySize) {
+      const fileContent = document.getElementById('initialContent').value;
+      const key = CryptoJS.lib.WordArray.random(keySize / 8);
+      document.getElementById('encryptionKey').value = key.toString(CryptoJS.enc.Base64);
+      const encryptedContent = CryptoJS.AES.encrypt(fileContent, key);
+      document.getElementById('encryptedContent').value = encryptedContent.toString();
+    }
+
+    function decrypt() {
+      const encryptedContent = document.getElementById('encryptedContent').value;
+      const key = CryptoJS.enc.Base64.parse(document.getElementById('encryptionKey').value);
+      const decryptedContent = CryptoJS.AES.decrypt(encryptedContent, key).toString(CryptoJS.enc.Utf8);
+      document.getElementById('decryptedContent').value = decryptedContent;
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function() {
+      readFile(this);
+    });
+  </script>
+</body>
+</html>
+```
+
+This version includes three buttons to encrypt the file with key sizes of 128, 192, and 256 bits respectively. After encryption, the generated encryption key will be displayed in the "Encryption Key" textarea, and then you can decrypt the file. Make sure to include this HTML code in a file with a `.html` extension and open it in a web browser.

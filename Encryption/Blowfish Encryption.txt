@@ -1,0 +1,26 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import Blowfish
+from Crypto.Util.Padding import pad
+import base64
+
+def blowfish_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using Blowfish encryption and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    key_bytes = key.encode('utf-8')
+    cipher = Blowfish.new(key_bytes, Blowfish.MODE_CBC)
+    iv = cipher.iv
+    encrypted_message = cipher.encrypt(pad(message.encode('utf-8'), Blowfish.block_size))
+    
+    with open(output_file, 'wb') as file:
+        file.write(base64.b64encode(iv + encrypted_message))
+
+# Example key (must be between 4 and 56 bytes long)
+key = "thisisaverysecret"
+
+# Encrypt message from input file and save to output file
+blowfish_encrypt('input.txt', 'encrypted.bin', key)

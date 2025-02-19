@@ -1,0 +1,31 @@
+def vigenere_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using the Vigenere cipher and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    key = key.upper()
+    encrypted_message = []
+    
+    key_index = 0
+    for char in message:
+        if char.isalpha():
+            is_upper = char.isupper()
+            idx = alphabet.index(char.upper())
+            key_idx = alphabet.index(key[key_index % len(key)])
+            encrypted_char = alphabet[(idx + key_idx) % 26]
+            encrypted_message.append(encrypted_char if is_upper else encrypted_char.lower())
+            key_index += 1
+        else:
+            encrypted_message.append(char)
+
+    with open(output_file, 'w') as file:
+        file.write(''.join(encrypted_message))
+
+# Example key
+key = "LEMON"
+
+# Encrypt message from input file and save to output file
+vigenere_encrypt('input.txt', 'encrypted.txt', key)

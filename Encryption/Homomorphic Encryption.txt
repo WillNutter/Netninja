@@ -1,0 +1,40 @@
+# pip install pyseal
+
+import seal
+from seal import ChooserEvaluator, Ciphertext, Decryptor, Encryptor, Evaluator, IntegerEncoder, KeyGenerator, SEALContext
+from seal import EncryptionParameters, scheme_type
+
+def homomorphic_encrypt(input_file, output_file):
+    """
+    Encrypt integers using homomorphic encryption and save to output file.
+    """
+    parms = EncryptionParameters(scheme_type.bfv)
+    parms.set_poly_modulus_degree(4096)
+    parms.set_coeff_modulus(seal.CoeffModulus.BFVDefault(4096))
+    parms.set_plain_modulus(seal.PlainModulus.Batching(4096, 20))
+
+    context = SEALContext(parms)
+
+    keygen = KeyGenerator(context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+    
+    encryptor = Encryptor(context, public_key)
+    encoder = IntegerEncoder(context)
+
+    with open(input_file, 'r') as file:
+        numbers = file.readlines()
+    
+    encrypted_numbers = []
+    for number in numbers:
+        plain = encoder.encode(int(number.strip()))
+        encrypted = Ciphertext()
+        encryptor.encrypt(plain, encrypted)
+        encrypted_numbers.append(encrypted)
+
+    with open(output_file, 'wb') as file:
+        for encrypted in encrypted_numbers:
+            file.write(encrypted.save())
+
+# Encrypt integers from input file and save to output file
+homomorphic_encrypt('input.txt', 'encrypted.bin')

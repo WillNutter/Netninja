@@ -1,0 +1,86 @@
+Certainly! Here's the modified HTML page using the Web Crypto API to include encryption with key sizes of 128, 192, and 256 bits and displaying all three keys:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AES Encryption and Decryption</title>
+</head>
+<body>
+  <h1>AES Encryption and Decryption</h1>
+
+  <label for="fileInput">Choose a text file:</label>
+  <input type="file" id="fileInput" accept=".txt"><br><br>
+
+  <button onclick="encrypt(128)">Encrypt with 128-bit Key</button>
+  <button onclick="encrypt(192)">Encrypt with 192-bit Key</button>
+  <button onclick="encrypt(256)">Encrypt with 256-bit Key</button><br><br>
+
+  <h2>Initial Unencrypted State:</h2>
+  <textarea id="initialContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <h2>Encryption Keys:</h2>
+  <textarea id="encryptionKeys" rows="6" cols="50" readonly></textarea><br><br>
+
+  <h2>Encrypted State:</h2>
+  <textarea id="encryptedContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <h2>Decrypted State:</h2>
+  <textarea id="decryptedContent" rows="10" cols="50" readonly></textarea><br><br>
+
+  <script>
+    async function readFile(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const text = event.target.result;
+        document.getElementById('initialContent').value = text;
+      };
+      reader.readAsText(file);
+    }
+
+    async function encrypt(keySize) {
+      const fileContent = document.getElementById('initialContent').value;
+      const keys = await generateKeys(keySize);
+      document.getElementById('encryptionKeys').value = `Key Size: ${keySize} bits\n\nKey 1: ${keys[0]}\n\nKey 2: ${keys[1]}\n\nKey 3: ${keys[2]}`;
+      const iv = window.crypto.getRandomValues(new Uint8Array(16));
+      const encryptedContents = await Promise.all(keys.map(key => encryptText(fileContent, key, iv)));
+      document.getElementById('encryptedContent').value = encryptedContents.join('\n\n');
+    }
+
+    async function generateKeys(keySize) {
+      const algorithm = { name: 'AES-CBC', length: keySize };
+      const keys = await Promise.all(Array.from({ length: 3 }, () => window.crypto.subtle.generateKey(algorithm, true, ['encrypt', 'decrypt'])));
+      return keys.map(key => CryptoJS.enc.Base64.stringify(new Uint8Array(await window.crypto.subtle.exportKey('raw', key))));
+    }
+
+    async function encryptText(text, key, iv) {
+      const encodedText = new TextEncoder().encode(text);
+      const encrypted = await window.crypto.subtle.encrypt({ name: 'AES-CBC', iv }, CryptoJS.enc.Base64.parse(key), encodedText);
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(encrypted)));
+    }
+
+    async function decrypt() {
+      const encryptedContent = document.getElementById('encryptedContent').value;
+      const keys = document.getElementById('encryptionKeys').value.split('\n\n')[1].split('\n').map(line => line.split(': ')[1]);
+      const decryptedContent = await Promise.all(keys.map(key => decryptText(encryptedContent, key)));
+      document.getElementById('decryptedContent').value = decryptedContent.join('\n\n');
+    }
+
+    async function decryptText(encryptedContent, key) {
+      const encryptedBytes = new Uint8Array(atob(encryptedContent).split('').map(char => char.charCodeAt(0)));
+      const iv = encryptedBytes.slice(0, 16);
+      const ciphertext = encryptedBytes.slice(16);
+      const decrypted = await window.crypto.subtle.decrypt({ name: 'AES-CBC', iv }, CryptoJS.enc.Base64.parse(key), ciphertext);
+      return new TextDecoder().decode(decrypted);
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function() {
+      readFile(this);
+    });
+  </script>
+</body>
+</html>
+```
+
+This version includes three buttons to encrypt the file with key sizes of 128, 192, and 256 bits respectively. After encryption, the generated encryption keys will be displayed in the "Encryption Keys" textarea, and then you can decrypt the file using these keys. Make sure to include this HTML code in a file with a `.html` extension and open it in a web browser.

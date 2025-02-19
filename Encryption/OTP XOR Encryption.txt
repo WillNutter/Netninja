@@ -1,0 +1,20 @@
+def encrypt_with_otp(input_file, output_file, otp_file):
+    """
+    Encrypt a file using the OTP and save the ciphertext to the output file.
+    """
+    with open(input_file, 'rb') as file:
+        plaintext = file.read()
+    
+    with open(otp_file, 'rb') as file:
+        otp = file.read()
+    
+    if len(plaintext) > len(otp):
+        raise ValueError("Input file size exceeds OTP size.")
+    
+    ciphertext = bytes(p ^ k for p, k in zip(plaintext, otp))
+    
+    with open(output_file, 'wb') as file:
+        file.write(ciphertext)
+
+# Example usage: Encrypt 'plaintext.txt' using the OTP from 'otp.bin' and save to 'encrypted.bin'
+encrypt_with_otp('plaintext.txt', 'encrypted.bin', 'otp.bin')

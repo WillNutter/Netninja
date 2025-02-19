@@ -1,0 +1,17 @@
+def atbash_encrypt(input_file, output_file):
+    """
+    Encrypt a message using the Atbash cipher and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    reversed_alphabet = alphabet[::-1]
+    translation_table = str.maketrans(alphabet + alphabet.lower(), reversed_alphabet + reversed_alphabet.lower())
+    encrypted_message = message.translate(translation_table)
+    
+    with open(output_file, 'w') as file:
+        file.write(encrypted_message)
+
+# Encrypt message from input file and save to output file
+atbash_encrypt('input.txt', 'encrypted.txt')

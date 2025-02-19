@@ -1,0 +1,32 @@
+import socket
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+
+def encrypt_and_send(input_file, host, port):
+    # Generate a random key
+    key = get_random_bytes(16)  # 16 bytes for AES-128
+
+    # Initialize AES cipher with the generated key
+    cipher = AES.new(key, AES.MODE_EAX)
+
+    # Read the content of the input file
+    with open(input_file, 'rb') as file:
+        plaintext = file.read()
+
+    # Encrypt the content
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+    # Connect to the receiver via TCP/IP
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, port))
+
+        # Send the key
+        s.sendall(key)
+
+        # Send the encrypted data
+        s.sendall(cipher.nonce)
+        s.sendall(tag)
+        s.sendall(ciphertext)
+
+# Example usage
+encrypt_and_send('input.txt', 'localhost', 12345)

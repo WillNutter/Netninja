@@ -1,0 +1,36 @@
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+import base64
+
+def generate_rsa_keys():
+    """
+    Generate RSA public and private keys.
+    """
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    public_key = key.publickey().export_key()
+    return private_key, public_key
+
+def encrypt_rsa(public_key, input_file, output_file):
+    """
+    Encrypt a message using RSA encryption and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    rsa_key = RSA.import_key(public_key)
+    cipher = PKCS1_OAEP.new(rsa_key)
+    encrypted_message = cipher.encrypt(message.encode('utf-8'))
+    
+    with open(output_file, 'w') as file:
+        file.write(base64.b64encode(encrypted_message).decode('utf-8'))
+
+# Generate keys and save them to files
+private_key, public_key = generate_rsa_keys()
+with open('public_key.pem', 'wb') as file:
+    file.write(public_key)
+with open('private_key.pem', 'wb') as file:
+    file.write(private_key)
+
+# Encrypt message from input file and save to output file
+encrypt_rsa(public_key, 'input.txt', 'encrypted.txt')

@@ -1,0 +1,46 @@
+# pip install pyseal
+
+import seal
+from seal import ChooserEvaluator, Ciphertext, Decryptor, Encryptor, Evaluator, IntegerEncoder, KeyGenerator, SEALContext
+from seal import EncryptionParameters, scheme_type
+
+def homomorphic_decrypt(input_file, output_file):
+    """
+    Decrypt integers using homomorphic encryption from input file and save to output file.
+    """
+    parms = EncryptionParameters(scheme_type.bfv)
+    parms.set_poly_modulus_degree(4096)
+    parms.set_coeff_modulus(seal.CoeffModulus.BFVDefault(4096))
+    parms.set_plain_modulus(seal.PlainModulus.Batching(4096, 20))
+
+    context = SEALContext(parms)
+
+    keygen = KeyGenerator(context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+
+    decryptor = Decryptor(context, secret_key)
+    encoder = IntegerEncoder(context)
+
+    with open(input_file, 'rb') as file:
+        encrypted_data = file.read()
+    
+    encrypted_numbers = []
+    while encrypted_data:
+        encrypted = Ciphertext()
+        encrypted.load(context, encrypted_data[:4096])  # Adjust the size based on your encryption settings
+        encrypted_numbers.append(encrypted)
+        encrypted_data = encrypted_data[4096:]
+
+    decrypted_numbers = []
+    for encrypted in encrypted_numbers:
+        plain = Plaintext()
+        decryptor.decrypt(encrypted, plain)
+        decrypted_numbers.append(encoder.decode_int32(plain))
+
+    with open(output_file, 'w') as file:
+        for number in decrypted_numbers:
+            file.write(f"{number}\n")
+
+# Decrypt integers from input file and save to output file
+homomorphic_decrypt('encrypted.bin', 'decrypted.txt')

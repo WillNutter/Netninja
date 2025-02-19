@@ -1,0 +1,42 @@
+# full disk decryption using 4096 AES
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import hashlib
+
+# Function to derive a key from a password using SHA-256
+def derive_key(password, salt=b''):
+    return hashlib.sha256(password + salt).digest()
+
+# Function to decrypt data with AES in CBC mode
+def decrypt(data, key):
+    iv = data[:AES.block_size]
+    ciphertext = data[AES.block_size:]
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+    return plaintext
+
+def main():
+    input_file = input("Enter the path of the input file to decrypt: ")
+    output_file = input("Enter the path for the decrypted output file: ")
+    key_file = input("Enter the path for the key file: ")
+    
+    # Read key from key file
+    with open(key_file, 'rb') as file:
+        key = file.read()
+    
+    # Read encrypted data from input file
+    with open(input_file, 'rb') as file:
+        encrypted_data = file.read()
+    
+    # Decrypt data
+    decrypted_data = decrypt(encrypted_data, key)
+    
+    # Write decrypted data to output file
+    with open(output_file, 'wb') as file:
+        file.write(decrypted_data)
+    
+    print("Decryption completed successfully.")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,8 @@
+def caesar_decrypt(input_file, output_file, shift=13):
+    """
+    Decrypt a message encrypted with the Caesar cipher (default is ROT13) from input file and save to output file.
+    """
+    caesar_encrypt(input_file, output_file, -shift)
+
+# Decrypt message from input file and save to output file
+caesar_decrypt('encrypted.txt', 'decrypted.txt')

@@ -1,0 +1,84 @@
+you could create a web interface that allows users to upload files to encrypt or decrypt using the provided encryption and decryption scripts. Here's how you could achieve this:
+
+1. **HTML Page with File Upload Form**:
+   Create an HTML page with a form that allows users to upload files and select the desired operation (encrypt or decrypt):
+   ```html
+   <!DOCTYPE html>
+   <html>
+   <head>
+       <title>Encryption/Decryption</title>
+   </head>
+   <body>
+       <h1>Encryption/Decryption</h1>
+       <form id="uploadForm" enctype="multipart/form-data">
+           <input type="file" name="file" id="file">
+           <label for="operation">Select operation:</label>
+           <select id="operation" name="operation">
+               <option value="encrypt">Encrypt</option>
+               <option value="decrypt">Decrypt</option>
+           </select>
+           <input type="submit" value="Submit" id="submitButton">
+       </form>
+       <div id="output"></div>
+
+       <script>
+           document.getElementById("uploadForm").addEventListener("submit", function(event) {
+               event.preventDefault();
+               var formData = new FormData();
+               formData.append("file", document.getElementById("file").files[0]);
+               formData.append("operation", document.getElementById("operation").value);
+
+               fetch("/process", {
+                   method: "POST",
+                   body: formData
+               })
+               .then(response => response.text())
+               .then(data => {
+                   document.getElementById("output").textContent = data;
+               })
+               .catch(error => {
+                   console.error("Error:", error);
+               });
+           });
+       </script>
+   </body>
+   </html>
+   ```
+
+2. **Server-side Scripting (Python with Flask)**:
+   Set up a Flask server to handle file uploads and execute the encryption/decryption scripts:
+   ```python
+   from flask import Flask, request, render_template
+   import subprocess
+
+   app = Flask(__name__)
+
+   @app.route("/")
+   def index():
+       return render_template("index.html")
+
+   @app.route("/process", methods=["POST"])
+   def process_file():
+       uploaded_file = request.files["file"]
+       operation = request.form["operation"]
+       uploaded_file_path = "/path/to/uploaded/file"
+       uploaded_file.save(uploaded_file_path)
+
+       if operation == "encrypt":
+           subprocess.run(["python", "aes_encrypt.py", uploaded_file_path])
+           return "File encrypted successfully!"
+       elif operation == "decrypt":
+           subprocess.run(["python", "aes_decrypt.py", uploaded_file_path])
+           return "File decrypted successfully!"
+
+   if __name__ == "__main__":
+       app.run(debug=True)
+   ```
+
+3. **Encryption and Decryption Scripts**:
+   Ensure that the encryption and decryption scripts (`aes_encrypt.py` and `aes_decrypt.py`) are placed in the same directory as the Flask application.
+
+4. **Run the Server**:
+   Run the Flask server, and users can access the HTML page through their web browser to upload files for encryption or decryption.
+
+Again, please note the security implications of allowing users to upload and execute arbitrary scripts. Ensure that proper security measures are in place to prevent unauthorized access and malicious activity.

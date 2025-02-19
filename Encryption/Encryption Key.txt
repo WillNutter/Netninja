@@ -1,0 +1,5 @@
+In the provided Python, 64 Bit, and 32 Bit Windows ransomware examples, 'K' is a string representing the encryption key. In Python, single characters enclosed in single quotes ('K') are treated as strings containing a single character.
+
+However, in the context of encryption, the key 'K' is typically used to represent a single-byte encryption key. In this case, 'K' is treated as a string, but it's used to perform a bitwise XOR operation with each byte of the file, effectively acting as a simple encryption key.
+
+So, when 'K' is used in the encryption and decryption process, it's treated as a string containing a single character representing the encryption key.

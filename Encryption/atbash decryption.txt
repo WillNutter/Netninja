@@ -1,0 +1,9 @@
+def atbash_decrypt(input_file, output_file):
+    """
+    Decrypt a message encrypted with the Atbash cipher from input file and save to output file.
+    """
+    # Atbash is symmetric
+    atbash_encrypt(input_file, output_file)
+
+# Decrypt message from input file and save to output file
+atbash_decrypt('encrypted.txt', 'decrypted.txt')

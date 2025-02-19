@@ -1,0 +1,25 @@
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+
+def encrypt_with_aes_ctr(input_file, output_file, key_file):
+    """
+    Encrypt a file using AES-CTR mode and save the ciphertext to the output file.
+    """
+    with open(input_file, 'rb') as file:
+        plaintext = file.read()
+    
+    key = get_random_bytes(16)  # Generate a random 128-bit (16-byte) key
+    
+    cipher = AES.new(key, AES.MODE_CTR)
+    ciphertext = cipher.encrypt(plaintext)
+    
+    # Write the key to a file (for decryption)
+    with open(key_file, 'wb') as file:
+        file.write(key)
+    
+    # Write the ciphertext to the output file
+    with open(output_file, 'wb') as file:
+        file.write(ciphertext)
+
+# Example usage: Encrypt 'plaintext.txt' using AES-CTR and save to 'encrypted.bin'
+encrypt_with_aes_ctr('plaintext.txt', 'encrypted.bin', 'key.bin')

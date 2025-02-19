@@ -1,0 +1,27 @@
+# pip install pycryptodome
+
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64
+
+def aes_decrypt(input_file, output_file, key):
+    """
+    Decrypt an AES-encrypted message from input file and save to output file.
+    """
+    with open(input_file, 'rb') as file:
+        encrypted_message = base64.b64decode(file.read())
+    
+    key_bytes = key.encode('utf-8')
+    iv = encrypted_message[:AES.block_size]
+    cipher = AES.new(key_bytes, AES.MODE_CBC, iv)
+    decrypted_message = unpad(cipher.decrypt(encrypted_message[AES.block_size:]), AES.block_size)
+    
+    with open(output_file, 'w') as file:
+        file.write(decrypted_message.decode('utf-8'))
+
+# Example key (must be 16, 24, or 32 bytes long)
+key = "thisisaverysecret"
+
+# Decrypt message from input file and save to output file
+aes_decrypt('encrypted.bin', 'decrypted.txt', key)

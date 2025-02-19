@@ -1,0 +1,34 @@
+import secrets
+
+def generate_encryption_key(length):
+    return secrets.token_bytes(length)
+
+# Generate a 16-byte (128-bit) encryption key
+encryption_key_16_bytes = generate_encryption_key(16)
+print("16-byte encryption key (128 bits):")
+print(encryption_key_16_bytes.hex())
+
+# Generate a 32-byte (256-bit) encryption key
+encryption_key_32_bytes = generate_encryption_key(32)
+print("\n32-byte encryption key (256 bits):")
+print(encryption_key_32_bytes.hex())
+
+# Generate a 64-byte (512-bit) encryption key
+encryption_key_64_bytes = generate_encryption_key(64)
+print("\n64-byte encryption key (512 bits):")
+print(encryption_key_64_bytes.hex())
+
+# Generate a 128-byte (1024-bit) encryption key
+encryption_key_128_bytes = generate_encryption_key(128)
+print("\n128-byte encryption key (1024 bits):")
+print(encryption_key_128_bytes.hex())
+
+# Generate a 256-byte (2048-bit) encryption key
+encryption_key_256_bytes = generate_encryption_key(256)
+print("\n256-byte encryption key (2048 bits):")
+print(encryption_key_256_bytes.hex())
+
+# Generate a 512-byte (4096-bit) encryption key
+encryption_key_512_bytes = generate_encryption_key(512)
+print("\n512-byte encryption key (4096 bits):")
+print(encryption_key_512_bytes.hex())

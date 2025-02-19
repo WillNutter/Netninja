@@ -1,0 +1,36 @@
+import socket
+from Crypto.Cipher import AES
+
+def receive_and_decrypt(key_file, output_file, port):
+    # Read the key from the key file
+    with open(key_file, 'rb') as file:
+        key = file.read()
+
+    # Initialize a TCP/IP server socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('localhost', port))
+        s.listen()
+
+        # Accept incoming connection
+        conn, addr = s.accept()
+
+        # Receive the key
+        key_received = conn.recv(16)
+
+        # Receive the encrypted data
+        nonce = conn.recv(16)
+        tag = conn.recv(16)
+        ciphertext = conn.recv(4096)  # Adjust buffer size as needed
+
+        # Initialize AES cipher with the key and nonce
+        cipher = AES.new(key_received, AES.MODE_EAX, nonce=nonce)
+
+        # Decrypt the content
+        plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+
+        # Write the decrypted content to the output file
+        with open(output_file, 'wb') as file:
+            file.write(plaintext)
+
+# Example usage
+receive_and_decrypt('key.txt', 'decrypted_file.txt', 12345)

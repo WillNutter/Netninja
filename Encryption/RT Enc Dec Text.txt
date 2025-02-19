@@ -1,0 +1,26 @@
+Certainly! Here's a simple Python example demonstrating real-time encryption and decryption using the `cryptography` library:
+
+```python
+from cryptography.fernet import Fernet
+
+# Generate a key
+key = Fernet.generate_key()
+
+# Create a Fernet cipher
+cipher = Fernet(key)
+
+# Message to encrypt
+message = b"Hello, this is a secret message!"
+
+# Encrypt the message
+encrypted_message = cipher.encrypt(message)
+
+print("Encrypted message:", encrypted_message)
+
+# Decrypt the message
+decrypted_message = cipher.decrypt(encrypted_message)
+
+print("Decrypted message:", decrypted_message.decode())
+```
+
+This script generates a random key, uses it to create a Fernet cipher, encrypts a message, then decrypts it. You can run this script and see the real-time encryption and decryption in action. Make sure to install the `cryptography` library if you haven't already (`pip install cryptography`).

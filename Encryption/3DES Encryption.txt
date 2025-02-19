@@ -1,0 +1,26 @@
+#pip install pycryptodome
+
+from Crypto.Cipher import DES3
+from Crypto.Util.Padding import pad
+import base64
+
+def triple_des_encrypt(input_file, output_file, key):
+    """
+    Encrypt a message using Triple DES encryption and save to output file.
+    """
+    with open(input_file, 'r') as file:
+        message = file.read()
+    
+    key_bytes = key.encode('utf-8')
+    cipher = DES3.new(key_bytes, DES3.MODE_CBC)
+    iv = cipher.iv
+    encrypted_message = cipher.encrypt(pad(message.encode('utf-8'), DES3.block_size))
+    
+    with open(output_file, 'wb') as file:
+        file.write(base64.b64encode(iv + encrypted_message))
+
+# Example key (must be 16 or 24 bytes long)
+key = "thisisaverysecretthisisave"
+
+# Encrypt message from input file and save to output file
+triple_des_encrypt('input.txt', 'encrypted.bin', key)

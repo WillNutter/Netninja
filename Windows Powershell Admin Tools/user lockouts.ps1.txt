@@ -1,0 +1,33 @@
+# PowerShell Script to Report User Account Lockouts
+
+# Define the output report file path
+$reportFilePath = "C:\UserLockoutReport.txt"
+
+# Start the report with some header information
+"User Account Lockout Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Define the start date for the report (e.g., last 7 days)
+$startDate = (Get-Date).AddDays(-7)
+
+# Search the event logs for Event ID 4740 (Account Lockout)
+$events = Get-WinEvent -LogName Security -FilterXPath "*[System[(EventID=4740)]]" | Where-Object {
+    # Filter events based on the time range
+    $_.TimeCreated -gt $startDate
+}
+
+# Process each event to gather relevant information
+foreach ($event in $events) {
+    # Extract relevant information from the event message
+    $eventMessage = $event.Message
+
+    # Extract username and other details from the message
+    $username = ($eventMessage -split 'Account Name:\s+')[1].Split('`r')[0]
+    $lockoutTime = $event.TimeCreated
+    $sourceMachine = ($eventMessage -split 'Caller Computer Name:\s+')[1].Split('`r')[0]
+
+    # Write the details of the user lockout to the report
+    "$username was locked out at $lockoutTime from computer: $sourceMachine" | Out-File -FilePath $reportFilePath -Append
+}
+
+Write-Host "User account lockout report generated successfully. Report saved to $reportFilePath"

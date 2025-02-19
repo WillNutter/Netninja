@@ -1,0 +1,36 @@
+# Define the target process name or task description
+$processName = "Simulated Task"
+$targetPercentage = 100 # The percentage to reach
+$interval = 1 # Time in seconds between updates
+
+# Function to create the bar graph display
+function Show-BarGraph {
+    param (
+        [int]$currentPercentage,
+        [int]$totalPercentage
+    )
+    
+    $numBars = 50 # Number of bars in the graph
+    $numFilledBars = [math]::round(($currentPercentage / 100) * $numBars)
+    $numEmptyBars = $numBars - $numFilledBars
+
+    $filledBar = "#" * $numFilledBars
+    $emptyBar = "-" * $numEmptyBars
+
+    $percentDisplay = "$currentPercentage%"
+
+    # Print out the progress bar with the percentage
+    Write-Host "`r[$filledBar$emptyBar] $percentDisplay" -NoNewline
+}
+
+# Simulate the progress
+for ($i = 0; $i -le $targetPercentage; $i++) {
+    # Show the bar graph
+    Show-BarGraph -currentPercentage $i -totalPercentage $targetPercentage
+    
+    # Simulate some work done per interval (you can replace this with actual process work)
+    Start-Sleep -Seconds $interval
+}
+
+# Final message indicating the process is complete
+Write-Host "`nProcess Complete!"

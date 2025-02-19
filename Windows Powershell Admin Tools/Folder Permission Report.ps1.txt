@@ -1,0 +1,70 @@
+# PowerShell Script to Check Folder Permissions and Report Security Issues
+
+# Define the root folder to check (you can change this path)
+$rootFolderPath = "C:\Path\To\Your\Folder"
+
+# Define the output report file path
+$reportFilePath = "C:\FolderPermissionsReport.txt"
+
+# Start the report with some header information
+"Folder Permissions Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Function to check folder permissions
+function Check-FolderPermissions {
+    param (
+        [string]$folderPath
+    )
+
+    # Get folder ACL (Access Control List)
+    $folderACL = Get-Acl -Path $folderPath
+
+    # Loop through each access rule (permission)
+    foreach ($accessRule in $folderACL.Access) {
+        $user = $accessRule.IdentityReference
+        $permission = $accessRule.FileSystemRights
+        $accessType = $accessRule.AccessControlType
+        $isInherited = $accessRule.IsInherited
+
+        # Check for Full Control permissions for non-admin users
+        if ($permission -eq "FullControl" -and ($user -notlike "*S-1-5-32-544")) {
+            $issue = "Security Issue: Full Control permission for non-admin user/group"
+            "$folderPath - $user has $permission" | Out-File -FilePath $reportFilePath -Append
+        }
+
+        # Check for any inherited permissions (optional: check if you want to report inherited permissions)
+        if ($isInherited) {
+            $issue = "Security Issue: Inherited permission"
+            "$folderPath - $user has inherited $permission" | Out-File -FilePath $reportFilePath -Append
+        }
+
+        # Check for permissions for unknown or unexpected users/groups (e.g., check for `Everyone` or `Authenticated Users`)
+        if ($user -eq "Everyone" -or $user -eq "Authenticated Users") {
+            $issue = "Security Issue: Permission granted to Everyone or Authenticated Users"
+            "$folderPath - $user has $permission" | Out-File -FilePath $reportFilePath -Append
+        }
+    }
+}
+
+# Recursively check all subfolders in the root directory
+function Check-AllFolders {
+    param (
+        [string]$path
+    )
+
+    # Get all subfolders recursively
+    $subfolders = Get-ChildItem -Path $path -Directory -Recurse
+
+    # Check the permissions for the root folder as well
+    Check-FolderPermissions -folderPath $path
+
+    # Check permissions for each subfolder
+    foreach ($folder in $subfolders) {
+        Check-FolderPermissions -folderPath $folder.FullName
+    }
+}
+
+# Start checking folder permissions
+Check-AllFolders -path $rootFolderPath
+
+Write-Host "Folder permissions check completed. Report saved to $reportFilePath"

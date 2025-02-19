@@ -1,0 +1,32 @@
+# PowerShell Script to Detect Who Deleted Files by Checking Event Logs
+
+# Define the output report file path
+$reportFilePath = "C:\DeletedFilesReport.txt"
+
+# Start the report with some header information
+"File Deletion Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Define the start date for searching (last 7 days in this example)
+$startDate = (Get-Date).AddDays(-7)
+
+# Search the event logs for Event ID 4663 (File System Access) with deletion attempts
+$events = Get-WinEvent -LogName Security -FilterXPath "*[System[(EventID=4663)]]" | Where-Object {
+    # Filter for events related to file deletions
+    $_.TimeCreated -gt $startDate -and $_.Message -like "*DELETE*"
+}
+
+# Process each event to gather relevant information
+foreach ($event in $events) {
+    # Extract relevant information from the event message
+    $eventMessage = $event.Message
+
+    # Extract the username and file path
+    $username = ($eventMessage -split 'Account Name:\s+')[1].Split('`r')[0]
+    $filePath = ($eventMessage -split 'Object Type:\s+')[1].Split('`r')[0]
+
+    # Write details to the report
+    "$username deleted file at: $filePath on $($event.TimeCreated)" | Out-File -FilePath $reportFilePath -Append
+}
+
+Write-Host "File deletion detection completed. Report saved to $reportFilePath"

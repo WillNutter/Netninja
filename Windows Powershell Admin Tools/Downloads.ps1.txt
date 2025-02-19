@@ -1,0 +1,31 @@
+# PowerShell Script to Report Downloaded Files in the "Downloads" Folder
+
+# Define the user-specific Downloads folder path
+$downloadsFolderPath = [System.IO.Path]::Combine($env:USERPROFILE, 'Downloads')
+
+# Define the output report file path
+$reportFilePath = "C:\DownloadedFilesReport.txt"
+
+# Start the report with some header information
+"Downloaded Files Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Define the start date for the report (e.g., last 7 days)
+$startDate = (Get-Date).AddDays(-7)
+
+# Get all files in the Downloads folder that were created within the last 7 days
+$downloadedFiles = Get-ChildItem -Path $downloadsFolderPath | Where-Object {
+    $_.CreationTime -gt $startDate
+}
+
+# Process each downloaded file and record relevant information
+foreach ($file in $downloadedFiles) {
+    $fileName = $file.Name
+    $filePath = $file.FullName
+    $downloadTime = $file.CreationTime
+
+    # Write the details of the downloaded file to the report
+    "$fileName was downloaded at $downloadTime from $filePath" | Out-File -FilePath $reportFilePath -Append
+}
+
+Write-Host "Downloaded files report generated successfully. Report saved to $reportFilePath"

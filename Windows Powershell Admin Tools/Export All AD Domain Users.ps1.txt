@@ -1,0 +1,12 @@
+# PowerShell Script to Export AD Users and Their Properties
+
+# Import the Active Directory module (ensure it's installed and available)
+Import-Module ActiveDirectory
+
+# Define the output file path
+$outputFilePath = "C:\AD_Users_Export.csv"
+
+# Get all AD users and select all properties
+Get-ADUser -Filter * -Property * | Select-Object * | Export-Csv -Path $outputFilePath -NoTypeInformation
+
+Write-Host "Export completed. The file is saved at $outputFilePath"

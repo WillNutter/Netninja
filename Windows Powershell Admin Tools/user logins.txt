@@ -1,0 +1,34 @@
+# PowerShell Script to Report User Logins
+
+# Define the output report file path
+$reportFilePath = "C:\UserLoginReport.txt"
+
+# Start the report with some header information
+"User Login Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Define the start date for the report (e.g., last 7 days)
+$startDate = (Get-Date).AddDays(-7)
+
+# Search the event logs for Event ID 4624 (Successful login)
+$events = Get-WinEvent -LogName Security -FilterXPath "*[System[(EventID=4624)]]" | Where-Object {
+    # Filter events based on the time range and ensure it's a successful login
+    $_.TimeCreated -gt $startDate
+}
+
+# Process each event to gather relevant information
+foreach ($event in $events) {
+    # Extract relevant information from the event message
+    $eventMessage = $event.Message
+
+    # Extract username and other details from the message
+    $username = ($eventMessage -split 'Account Name:\s+')[1].Split('`r')[0]
+    $domain = ($eventMessage -split 'Account Domain:\s+')[1].Split('`r')[0]
+    $logonTime = $event.TimeCreated
+    $logonType = ($eventMessage -split 'Logon Type:\s+')[1].Split('`r')[0]
+
+    # Write the details of the user login to the report
+    "$domain\$username logged in at $logonTime (Logon Type: $logonType)" | Out-File -FilePath $reportFilePath -Append
+}
+
+Write-Host "User logi

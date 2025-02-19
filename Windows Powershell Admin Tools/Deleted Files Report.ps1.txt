@@ -1,0 +1,37 @@
+# PowerShell Script to Generate a Report of Deleted Files
+
+# Define the output report file path
+$reportFilePath = "C:\DeletedFilesReport.txt"
+
+# Start the report with some header information
+"Deleted Files Report - Generated on $(Get-Date)" | Out-File -FilePath $reportFilePath -Append
+"--------------------------------------------------" | Out-File -FilePath $reportFilePath -Append
+
+# Function to list files in the Recycle Bin
+function Get-DeletedFiles {
+    # Get the Recycle Bin for all drives
+    $recycleBin = [IO.Path]::Combine([System.Environment]::GetFolderPath('LocalApplicationData'), 'Microsoft\Windows\Explorer\RecycleBin')
+
+    # Check if the Recycle Bin exists
+    if (Test-Path -Path $recycleBin) {
+        # Get all the deleted files in the Recycle Bin
+        $deletedFiles = Get-ChildItem -Path $recycleBin -Recurse -File
+
+        # Loop through each deleted file and record information
+        foreach ($file in $deletedFiles) {
+            $fileName = $file.Name
+            $filePath = $file.FullName
+            $deleteTime = $file.CreationTime
+
+            # Write the details of the deleted file to the report
+            "$fileName was deleted from $filePath on $deleteTime" | Out-File -FilePath $reportFilePath -Append
+        }
+
+        Write-Host "Report completed. The file is saved at $reportFilePath"
+    } else {
+        Write-Host "Recycle Bin not found. Ensure the system has a Recycle Bin configured."
+    }
+}
+
+# Run the function to get deleted files and generate the report
+Get-DeletedFiles

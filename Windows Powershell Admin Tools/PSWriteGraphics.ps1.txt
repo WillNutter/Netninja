@@ -1,0 +1,12 @@
+Install-Module -Name PSWriteGraphics -Scope CurrentUser
+
+Import-Module PSWriteGraphics
+
+# Create a pie chart
+$progress = 50 # Percentage value for the pie chart
+
+# Draw a pie chart with PSWriteGraphics
+New-PieChart -Title "Progress Chart" -Data @{"Completed"=$progress; "Remaining"=100-$progress} -OutFile "piechart.png"
+
+# Show the generated pie chart
+Start-Process "piechart.png"

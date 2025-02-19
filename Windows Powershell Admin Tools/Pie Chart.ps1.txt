@@ -1,0 +1,51 @@
+Add-Type -TypeDefinition @"
+using System;
+using System.Windows.Forms;
+using System.Drawing;
+
+public class PieChartForm : Form
+{
+    private float percentage = 0;
+
+    public PieChartForm()
+    {
+        this.Text = "Pie Chart Simulation";
+        this.Size = new Size(400, 400);
+        this.Paint += new PaintEventHandler(this.OnPaint);
+    }
+
+    public void UpdatePercentage(float newPercentage)
+    {
+        this.percentage = newPercentage;
+        this.Invalidate(); // Redraw the form with updated percentage
+    }
+
+    private void OnPaint(object sender, PaintEventArgs e)
+    {
+        Graphics g = e.Graphics;
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        // Draw the outer circle
+        g.FillEllipse(Brushes.LightGray, 50, 50, 300, 300);
+
+        // Define the start angle and sweep angle for the filled section
+        float sweepAngle = (360 * this.percentage) / 100;
+
+        // Draw the filled pie slice
+        g.FillPie(Brushes.Green, 50, 50, 300, 300, -90, sweepAngle);
+
+        // Optionally, draw a border around the pie chart
+        g.DrawEllipse(Pens.Black, 50, 50, 300, 300);
+        
+        // Draw the percentage in the center
+        string percentageText = $"{this.percentage}%";
+        Font font = new Font("Arial", 16);
+        SizeF textSize = g.MeasureString(percentageText, font);
+        g.DrawString(percentageText, font, Brushes.Black, 
+                     new PointF((400 - textSize.Width) / 2, (400 - textSize.Height) / 2));
+    }
+}
+"@
+
+# Create a new PieChartForm instance
+$pieCh

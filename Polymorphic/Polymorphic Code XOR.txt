@@ -1,0 +1,42 @@
+import random
+
+def encrypt(data, key):
+    return bytes([b ^ key for b in data])
+
+def decrypt(data, key):
+    return bytes([b ^ key for b in data])
+
+def generate_random_key():
+    return random.randint(1, 255)
+
+def main():
+    payload = b"This is the malicious payload."
+
+    # Generate a random key for encryption
+    key = generate_random_key()
+
+    # Encrypt the payload
+    encrypted_payload = encrypt(payload, key)
+
+    # Generate a random decryption routine
+    decryption_routine = f"""
+def decrypt(data, key):
+    return bytes([b ^ key for b in data])
+
+# Encrypted payload
+encrypted_payload = {list(encrypted_payload)}
+
+# Decryption key
+key = {key}
+
+# Decrypt and execute the payload
+payload = decrypt(bytes(encrypted_payload), key)
+exec(payload.decode('utf-8'))
+"""
+
+    # Simulate the polymorphic nature by printing different decryption routines
+    print("Generated Decryption Routine:")
+    print(decryption_routine)
+
+if __name__ == "__main__":
+    main()

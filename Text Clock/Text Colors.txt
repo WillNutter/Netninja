@@ -1,8 +1,0 @@
-00 = Black       08 = Gray
-01 = Blue        09 = Light Blue
-02 = Green       0A = Light Green
-03 = Aqua        0B = Light Aqua
-04 = Red         0C = Light Red
-05 = Purple      0D = Light Purple
-06 = Yellow      0E = Light Yellow
-07 = White       0F = Bright White

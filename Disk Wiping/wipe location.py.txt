@@ -1,0 +1,13 @@
+import os
+import random
+
+# Secure file wipe function
+def secure_wipe(file_path):
+    with open(file_path, "r+b") as f:
+        length = os.path.getsize(file_path)
+        f.seek(0)
+        f.write(bytes([random.randint(0, 255) for _ in range(length)]))
+    os.remove(file_path)
+
+# Call to securely wipe the wallet file
+secure_wipe("/path/to/crypto_wallet")

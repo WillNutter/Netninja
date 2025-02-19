@@ -1,0 +1,80 @@
+import os
+import shutil
+import random
+import subprocess
+import time
+
+def copy_wallet(source_path, destination_path):
+    """
+    Copies the crypto wallet to a secure location.
+    """
+    try:
+        shutil.copy(source_path, destination_path)
+        print(f"Wallet copied from {source_path} to {destination_path}.")
+    except Exception as e:
+        print(f"Error copying wallet: {e}")
+
+def secure_wipe(file_path):
+    """
+    Securely wipes the given file by overwriting it with random data.
+    """
+    try:
+        with open(file_path, "r+b") as f:
+            length = os.path.getsize(file_path)
+            f.seek(0)
+            f.write(bytes([random.randint(0, 255) for _ in range(length)]))
+        os.remove(file_path)
+        print(f"File {file_path} securely wiped and deleted.")
+    except Exception as e:
+        print(f"Error wiping file {file_path}: {e}")
+
+def disable_network():
+    """
+    Disables all network interfaces to force local-only mode.
+    """
+    try:
+        # Disable Ethernet and Wi-Fi interfaces (you may need to customize these interfaces based on your system)
+        subprocess.run(["sudo", "ifconfig", "eth0", "down"], check=True)
+        subprocess.run(["sudo", "ifconfig", "wlan0", "down"], check=True)
+        print("Network interfaces disabled (local-only mode).")
+    except Exception as e:
+        print(f"Error disabling network interfaces: {e}")
+
+def factory_reset():
+    """
+    Starts the process of wiping the system disk (WARNING: irrecoverable).
+    """
+    try:
+        # Warning: This is a destructive operation!
+        # You need to be careful with the disk selection
+        # WARNING: This will erase all data on the disk specified below
+        print("Starting system disk wipe... WARNING: This will erase all data!")
+        
+        # Replace '/dev/sda' with the actual disk you want to wipe
+        subprocess.run(["sudo", "dd", "if=/dev/zero", "of=/dev/sda", "bs=1M", "status=progress"], check=True)
+        
+        print("Disk wipe complete. Proceed with OS reinstall if needed.")
+    except Exception as e:
+        print(f"Error wiping the system disk: {e}")
+
+def main():
+    # 1. Copy crypto wallet
+    source_wallet_path = "/path/to/crypto_wallet"
+    backup_wallet_path = "/path/to/backup_location"
+    copy_wallet(source_wallet_path, backup_wallet_path)
+    
+    # 2. Securely wipe the original wallet file
+    secure_wipe(source_wallet_path)
+    
+    # 3. Disable network to force local-only mode
+    disable_network()
+    
+    # 4. Factory wipe the system (irreversible, use with extreme caution)
+    confirmation = input("Are you sure you want to factory wipe the system disk? This action is irreversible! (yes/no): ")
+    if confirmation.lower() == 'yes':
+        factory_reset()
+    else:
+        print("Aborted system wipe.")
+
+if __name__ == "__main__":
+    main()

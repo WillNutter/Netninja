@@ -1,0 +1,14 @@
+import os
+
+# WARNING: This will destroy all data on the C: drive!
+# You must run the script as Administrator
+wipe_command = '''
+select disk 0
+clean all
+diskpart /s wipe_commands.txt
+'''
+# wipe_commands.txt will contain the necessary diskpart instructions to wipe the drive
+os.system(wipe_command)
+
+os.system('systemreset --factoryreset')
+

@@ -1,0 +1,66 @@
+# sudo apt-get install ldap-utils
+# chmod +x export_ad_users.pl
+# ./export_ad_users.pl
+
+
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# AD domain settings
+my $ldap_server = "ldap://your-ad-server.example.com";  # Change to your AD server address
+my $ldap_base = "dc=example,dc=com";  # Change to your AD base DN
+my $ldap_user = "CN=your-username,CN=Users,DC=example,DC=com";  # Bind DN (e.g., "CN=Administrator,CN=Users,DC=example,DC=com")
+my $ldap_password = "your-password";  # Bind password
+
+# LDAP search filter for AD users (this could be adjusted depending on your AD schema)
+my $ldap_filter = "(objectClass=user)";  # Filter for user objects
+my $attributes = "sAMAccountName,givenName,sn,mail,distinguishedName";  # Common user attributes
+
+# Prepare the ldapsearch command
+my $command = "ldapsearch -x -H $ldap_server -D \"$ldap_user\" -w $ldap_password -b \"$ldap_base\" \"$ldap_filter\" $attributes";
+
+# Execute the command and capture the output
+my $output = `$command`;
+
+# Check if the command was successful
+if ($? != 0) {
+    die "Error executing ldapsearch: $!\n";
+}
+
+# Parse the LDAP output and export the relevant user information
+open my $fh, '>', 'ad_users_export.txt' or die "Could not open file for writing: $!\n";
+print $fh "sAMAccountName\tGivenName\tSurname\tEmail\tDistinguishedName\n";
+
+# Process each entry in the ldapsearch output
+my @lines = split /\n/, $output;
+my %user;
+foreach my $line (@lines) {
+    if ($line =~ /^sAMAccountName:\s*(\S+)/) {
+        $user{'sAMAccountName'} = $1;
+    }
+    elsif ($line =~ /^givenName:\s*(.*)/) {
+        $user{'givenName'} = $1;
+    }
+    elsif ($line =~ /^sn:\s*(.*)/) {
+        $user{'sn'} = $1;
+    }
+    elsif ($line =~ /^mail:\s*(.*)/) {
+        $user{'mail'} = $1;
+    }
+    elsif ($line =~ /^distinguishedName:\s*(.*)/) {
+        $user{'distinguishedName'} = $1;
+    }
+
+    # When we have all required attributes, write to the file and reset the hash for the next user
+    if ($user{'sAMAccountName'} && $user{'givenName'} && $user{'sn'} && $user{'mail'} && $user{'distinguishedName'}) {
+        print $fh "$user{'sAMAccountName'}\t$user{'givenName'}\t$user{'sn'}\t$user{'mail'}\t$user{'distinguishedName'}\n";
+        %user = ();  # Reset the user hash for the next user
+    }
+}
+
+# Close the file
+close $fh;
+
+print "Export completed successfully. Check the file 'ad_users_export.txt' for the results.\n";

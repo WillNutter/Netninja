@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+#sudo perl show_user_lockouts.pl
+use strict;
+use warnings;
+
+# Run the faillock command and capture the output
+my $output = `faillock --user *`;  # Get information for all users
+
+# Check if the command was successful
+if ($? != 0) {
+    die "Error running faillock: $!\n";
+}
+
+# Print the header
+print "User Lockout Information (using faillock):\n";
+print "--------------------------------------------\n";
+
+# Process the output from faillock
+my @lines = split /\n/, $output;
+foreach my $line (@lines) {
+    if ($line =~ /^(.*)\s+:\s+(\d+)\s+failed\s+attempts\s+.*lockout/) {
+        my $user = $1;
+        my $failed_attempts = $2;
+        print "User: $user | Failed Attempts: $failed_attempts | Lockout\n";
+    }
+}

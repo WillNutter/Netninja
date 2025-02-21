@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Find;
+
+# Path to the trash directory (common locations for most Linux systems)
+my $trash_dir = "$ENV{HOME}/.local/share/Trash/files";
+
+# Check if the Trash directory exists
+if (-d $trash_dir) {
+    print "Files in Trash directory:\n";
+    
+    # Traverse the trash directory and list files
+    find(sub {
+        # Only print files, skip directories
+        if (-f $_) {
+            my $file_path = $_;
+            print "$file_path\n";
+        }
+    }, $trash_dir);
+} else {
+    print "Trash directory does not exist or is empty.\n";
+}

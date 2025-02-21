@@ -1,0 +1,44 @@
+# on a system with auditd installed
+# -w /home/ -p wa -k file_deletion
+# sudo systemctl restart auditd
+# chmod +x show_file_deletions.pl
+# sudo perl show_file_deletions.pl
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Path to the audit log file
+my $audit_log = '/var/log/audit/audit.log';
+
+# Check if the audit log exists
+unless (-e $audit_log) {
+    die "Audit log file '$audit_log' does not exist. Please configure auditd.\n";
+}
+
+# Open the audit log for reading
+open my $fh, '<', $audit_log or die "Could not open audit log file '$audit_log': $!\n";
+
+# Print the header
+print "File Deletion Events (from audit.log):\n";
+print "--------------------------------------\n";
+
+# Process each line in the audit log
+while (my $line = <$fh>) {
+    # Look for file deletion events (events tagged with 'file_deletion')
+    if ($line =~ /type=DELETE.*key=file_deletion.*exe="(\/\S+)".*uid=(\d+).*auid=(\d+).*name="(\/\S+)"/) {
+        my $exe = $1;         # Executable that performed the deletion (e.g., `rm`)
+        my $uid = $2;         # UID of the user who deleted the file
+        my $auid = $3;        # AUID (Audit User ID)
+        my $file = $4;        # File that was deleted
+
+        # Get the username for the UID (if possible)
+        my $username = getpwuid($uid) || "Unknown";
+
+        # Print the details
+        print "User: $username (UID: $uid) deleted file: $file using: $exe\n";
+    }
+}
+
+# Close the log file
+close $fh;

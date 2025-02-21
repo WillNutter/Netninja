@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Spec;
+use File::Find;
+
+# Get the default download directory based on OS
+my $download_dir;
+if ($^O eq 'linux') {
+    $download_dir = $ENV{'HOME'} . '/Downloads';  # Common on Linux
+} elsif ($^O eq 'darwin') {
+    $download_dir = $ENV{'HOME'} . '/Downloads';  # Common on MacOS
+} elsif ($^O eq 'MSWin32') {
+    $download_dir = $ENV{'USERPROFILE'} . '\\Downloads';  # Common on Windows
+} else {
+    die "Unsupported operating system: $^O";
+}
+
+# Check if the directory exists
+if (-d $download_dir) {
+    print "Files downloaded from your browser are listed below:\n";
+    # Traverse the directory and print the files
+    find(sub {
+        # Only print files, skip directories
+        if (-f $_) {
+            my $file_path = File::Spec->catfile($download_dir, $_);
+            print "$file_path\n";
+        }
+    }, $download_dir);

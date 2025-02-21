@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+# chmod +x show_user_logins_last.pl
+# ./show_user_logins_last.pl
+# sudo perl show_user_logins_authlog.pl
+
+use strict;
+use warnings;
+
+# Path to the auth.log file (could be different based on your system)
+my $log_file = '/var/log/auth.log';
+
+# Check if the log file exists
+unless (-e $log_file) {
+    die "Authentication log file '$log_file' does not exist.\n";
+}
+
+# Open the log file for reading
+open my $fh, '<', $log_file or die "Could not open log file '$log_file': $!\n";
+
+# Print the login history header
+print "User Login History (from auth.log):\n";
+print "------------------------------------\n";
+
+# Process each line in the log file
+while (my $line = <$fh>) {
+    # Look for successful login messages (SSH or local login)
+    if ($line =~ /session opened for user (\w+) by \(uid=\d+\)/) {
+        my $user = $1;
+        if ($line =~ /sshd/) {
+            print "SSH Login: User: $user | Date: $line";
+        } else {
+            print "Local Login: User: $user | Date: $line";
+        }
+    }
+}
+
+# Close the log file
+close $fh;

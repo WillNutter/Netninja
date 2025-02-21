@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+# sudo perl show_user_lockouts.pl
+use strict;
+use warnings;
+
+# Path to the auth.log file
+my $log_file = '/var/log/auth.log';
+
+# Check if the log file exists
+unless (-e $log_file) {
+    die "Authentication log file '$log_file' does not exist.\n";
+}
+
+# Open the log file for reading
+open my $fh, '<', $log_file or die "Could not open log file '$log_file': $!\n";
+
+# Print the header
+print "User Lockout Information (from auth.log):\n";
+print "-------------------------------------------\n";
+
+# Process each line in the log file
+while (my $line = <$fh>) {
+    # Check for failed login attempts
+    if ($line =~ /Failed password for (\w+) from (\S+) port (\d+)/) {
+        my $user = $1;
+        my $ip = $2;
+        print "Failed login attempt: User: $user, IP: $ip\n";
+    }
+    
+    # Check for account lockout messages
+    if ($line =~ /Account locked for user (\w+)/) {
+        my $user = $1;
+        print "Account locked for user: $user\n";
+    }
+}
+
+# Close the log file
+close $fh;

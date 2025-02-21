@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+# chmod +x show_user_logins_last.pl
+# ./show_user_logins_last.pl
+# sudo perl show_user_logins_authlog.pl
+use strict;
+use warnings;
+
+# Run the last command to get user login history
+my $output = `last`;
+
+# Check if the command was successful
+if ($? != 0) {
+    die "Error running last command: $!\n";
+}
+
+# Print the login history header
+print "User Login History (from 'last' command):\n";
+print "------------------------------------------\n";
+
+# Process the output from last command
+my @lines = split /\n/, $output;
+foreach my $line (@lines) {
+    # Skip lines that don't have login information
+    next if $line =~ /^wtmp/;  # These are session headers
+    
+    # Extract relevant login details
+    if ($line =~ /^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.*)/) {
+        my $user = $1;
+        my $tty = $2;
+        my $ip = $3;
+        my $date = "$4 $5";
+        my $status = $6;
+
+        print "User: $user | TTY: $tty | IP: $ip | Date: $date | Status: $status\n";
+    }
+}

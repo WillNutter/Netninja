@@ -1,0 +1,74 @@
+# sudo python3 show_file_deletions.py
+# sudo auditctl -w /path/to/directory -p wa -k file_deletion
+
+
+import re
+import os
+from datetime import datetime
+
+# Function to parse the audit log for file deletion events
+def parse_audit_log_for_deletions():
+    audit_log = '/var/log/audit/audit.log'
+    
+    if not os.path.exists(audit_log):
+        print(f"Log file {audit_log} does not exist.")
+        return
+
+    # Regular expression pattern to match file delete events in audit logs
+    # The pattern looks for 'delete' and 'name' entries in audit logs
+    delete_pattern = r".*type=DELETE.*name=(.*?)(?:\s.*?)?uid=(\d+)"
+    
+    with open(audit_log, 'r') as f:
+        deletions = []
+        for line in f:
+            match = re.search(delete_pattern, line)
+            if match:
+                # Extract file name and UID (user ID) from the log line
+                file_name = match.group(1)
+                uid = match.group(2)
+
+                # Convert UID to username (optional, requires /etc/passwd)
+                user_name = get_username_by_uid(uid)
+
+                timestamp = line.split(' ')[0:3]
+                timestamp = ' '.join(timestamp)
+                timestamp = datetime.strptime(timestamp, "%b %d %H:%M:%S")
+
+                deletions.append({
+                    'timestamp': timestamp,
+                    'user': user_name,
+                    'file': file_name
+                })
+                
+    return deletions
+
+# Function to get the username from UID (uses /etc/passwd)
+def get_username_by_uid(uid):
+    try:
+        with open('/etc/passwd', 'r') as f:
+            for line in f:
+                if line.startswith(f"{uid}:"):
+                    return line.split(":")[0]
+    except FileNotFoundError:
+        print("/etc/passwd file not found.")
+        return None
+    return "Unknown User"
+
+# Function to display the deletions
+def display_deletions(deletions):
+    if not deletions:
+        print("No file deletions found.")
+        return
+    
+    print("\nFile Deletions Log:")
+    print("-------------------")
+    for deletion in deletions:
+        print(f"Timestamp: {deletion['timestamp']}, User: {deletion['user']}, File: {deletion['file']}")
+
+# Main function to check for file deletions
+def show_file_deletions():
+    deletions = parse_audit_log_for_deletions()
+    display_deletions(deletions)
+
+if __name__ == "__main__":
+    show_file_deletions()

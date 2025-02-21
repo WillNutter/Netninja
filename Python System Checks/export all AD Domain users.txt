@@ -1,0 +1,44 @@
+# pip install ldap3
+# python3 export_ad_users.py
+
+
+import csv
+from ldap3 import Server, Connection, ALL, NTLM
+
+# AD server details
+AD_SERVER = 'your-ldap-server.com'  # AD server address (or IP)
+AD_DOMAIN = 'YOURDOMAIN'            # Domain name
+AD_USER = 'username'                # Bind DN (username with enough rights to read AD)
+AD_PASSWORD = 'password'            # Bind password
+
+# LDAP search base (typically the root of your AD domain)
+BASE_DN = 'DC=yourdomain,DC=com'    # Modify according to your domain
+
+# Fields you might want to export for each user
+USER_ATTRIBUTES = ['sAMAccountName', 'displayName', 'mail', 'givenName', 'sn', 'userPrincipalName']
+
+# Function to connect to AD server
+def connect_to_ad():
+    server = Server(AD_SERVER, get_info=ALL)  # Connect to the AD server
+    conn = Connection(server, user=f'{AD_DOMAIN}\\{AD_USER}', password=AD_PASSWORD, authentication=NTLM)
+    if not conn.bind():
+        print("Failed to bind to AD. Check your credentials and domain.")
+        exit(1)
+    return conn
+
+# Function to fetch and export all users from AD
+def export_ad_users():
+    # Connect to AD
+    conn = connect_to_ad()
+    
+    # Perform an LDAP search to find all users
+    conn.search(BASE_DN, '(objectClass=user)', attributes=USER_ATTRIBUTES)
+
+    # Export the results to a CSV file
+    with open('ad_users.csv', 'w', newline='') as csvfile:
+        fieldnames = ['Username', 'Display Name', 'Email', 'Given Name', 'Surname', 'User Principal Name']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        
+        # Loop through the search results and wri

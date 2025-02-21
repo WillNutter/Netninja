@@ -1,0 +1,62 @@
+# pip install inotify
+# python3 monitor_file_deletions.py
+
+
+import os
+import inotify.adapters
+import pwd
+import time
+
+# Function to get the username by UID
+def get_username_by_uid(uid):
+    try:
+        user = pwd.getpwuid(uid)
+        return user.pw_name
+    except KeyError:
+        return None
+
+# Function to monitor a directory for file deletions
+def monitor_directory_for_deletions(directory_to_watch):
+    if not os.path.exists(directory_to_watch):
+        print(f"Directory {directory_to_watch} does not exist.")
+        return
+
+    print(f"Monitoring directory: {directory_to_watch}")
+    i = inotify.adapters.Inotify()
+
+    # Watch for DELETE events in the specified directory
+    i.add_watch(directory_to_watch, inotify.constants.IN_DELETE)
+
+    try:
+        for event in i.event_gen(yield_nones=False):
+            # Get the event details (type and name of the file)
+            _, event_type, path, filename = event
+            
+            if event_type == 'IN_DELETE':
+                # Get the UID of the user who deleted the file
+                stat_info = os.stat(os.path.join(path, filename))
+                uid = stat_info.st_uid
+                user_name = get_username_by_uid(uid)
+
+                # Print details of the deleted file
+                print(f"File deleted: {filename}")
+                print(f"User who deleted: {user_name} (UID: {uid})")
+                print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+                print("-" * 40)
+                
+    except KeyboardInterrupt:
+        print("Stopped monitoring.")
+    finally:
+        i.remove_watch(directory_to_watch)
+        i.close()
+
+# Main function to start monitoring
+def main():
+    # Specify the directory to watch (e.g., /home/user)
+    directory_to_watch = '/path/to/directory'
+
+    # Monitor the directory for file deletions
+    monitor_directory_for_deletions(directory_to_watch)
+
+if __name__ == "__main__":
+    main()

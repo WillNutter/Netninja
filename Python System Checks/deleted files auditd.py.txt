@@ -1,0 +1,38 @@
+#sudo python3 show_deleted_files.py
+
+import re
+import os
+
+# Path to the audit log file (could vary depending on your system)
+audit_log = '/var/log/audit/audit.log'
+
+# Check if the audit log exists
+if not os.path.exists(audit_log):
+    print(f"Audit log file '{audit_log}' does not exist. Please configure auditd.")
+    exit(1)
+
+# Open the audit log for reading
+with open(audit_log, 'r') as file:
+    print("Deleted File Events (from audit.log):")
+    print("--------------------------------------")
+
+    # Regular expression to match file deletion events
+    delete_pattern = r'type=DELETE.*key=file_deletion.*exe="(/[\S]+)".*uid=(\d+).*name="(/[\S]+)"'
+
+    # Process each line in the audit log
+    for line in file:
+        # Match deletion events using the regex
+        match = re.search(delete_pattern, line)
+        if match:
+            exe = match.group(1)  # Executable used to delete the file (e.g., rm)
+            uid = match.group(2)  # UID of the user who deleted the file
+            deleted_file = match.group(3)  # Path of the deleted file
+
+            # Get the username corresponding to the UID
+            try:
+                user = os.getpwuid(int(uid)).pw_name
+            except KeyError:
+                user = "Unknown"
+
+            # Print the information about the deleted file
+            print(f"User: {user} (UID: {uid}) deleted file: {deleted_file} using: {exe}")

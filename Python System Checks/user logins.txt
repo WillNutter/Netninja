@@ -1,0 +1,56 @@
+# sudo python3 show_user_logins.py
+
+
+import os
+import re
+import time
+import utmp
+from datetime import datetime
+
+# Function to parse /var/log/auth.log for successful logins
+def parse_auth_log():
+    auth_log = '/var/log/auth.log'
+    
+    if not os.path.exists(auth_log):
+        print(f"Log file {auth_log} does not exist.")
+        return
+
+    print("\nRecent Successful Logins from auth.log:")
+    print("--------------------------------------")
+
+    # Regex to match successful logins (e.g., sshd or login)
+    login_pattern = r"sshd.*(Accepted|session opened).*for (\S+) from (\S+)"
+    
+    with open(auth_log, 'r') as f:
+        for line in f:
+            match = re.search(login_pattern, line)
+            if match:
+                user = match.group(2)
+                source_ip = match.group(3)
+                timestamp = line.split(' ')[0:3]
+                timestamp = ' '.join(timestamp)
+                timestamp = datetime.strptime(timestamp, "%b %d %H:%M:%S")
+                
+                print(f"User: {user}, Source IP: {source_ip}, Timestamp: {timestamp}")
+
+# Function to parse /var/log/wtmp for historical logins
+def parse_wtmp():
+    wtmp_file = '/var/log/wtmp'
+
+    if not os.path.exists(wtmp_file):
+        print(f"Log file {wtmp_file} does not exist.")
+        return
+
+    print("\nAll User Logins from wtmp:")
+    print("---------------------------")
+    
+    # Open the wtmp file and read login/logout information
+    with open(wtmp_file, 'rb') as f:
+        wtmp_data = utmp.read_wtmp(f)
+        
+        for entry in wtmp_data:
+            if entry.ut_type == utmp.USER_PROCESS:
+                login_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry.ut_time))
+                print(f"User: {entry.ut_user}, TTY: {entry.ut_line}, Login Time: {login_time}")
+
+# Main function to 

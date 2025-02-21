@@ -1,0 +1,38 @@
+# pip install inotify
+# sudo python3 track_deletions_inotify.py
+
+
+import os
+import sys
+import inotify.adapters
+
+# Define the directory to monitor
+directory_to_watch = '/home/user_to_watch'  # Adjust path as needed
+
+def monitor_directory():
+    # Initialize inotify adapter
+    i = inotify.adapters.Inotify()
+
+    # Add a watch for the directory
+    i.add_watch(directory_to_watch)
+
+    print(f"Monitoring {directory_to_watch} for file deletions...")
+
+    # Event loop to listen for file deletion events
+    try:
+        for event in i.event_gen():
+            if event is not None:
+                header, type_names, path, filename = event
+                if 'DELETE' in type_names:
+                    print(f"File deleted: {os.path.join(path, filename)}")
+    except KeyboardInterrupt:
+        print("\nExiting the monitor...")
+    finally:
+        i.remove_watch(directory_to_watch)
+
+if __name__ == "__main__":
+    if not os.path.exists(directory_to_watch):
+        print(f"Directory {directory_to_watch} does not exist.")
+        sys.exit(1)
+
+    monitor_directory()

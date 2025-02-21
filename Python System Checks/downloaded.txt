@@ -1,0 +1,92 @@
+# sudo python3 show_downloads.py
+
+
+import os
+import sqlite3
+import glob
+from pathlib import Path
+
+# Common download directories
+download_dirs = [
+    str(Path.home() / 'Downloads'),
+    '/tmp'  # Some applications might download files to the temporary directory
+]
+
+# Check if the directory exists
+def list_downloaded_files(directory):
+    if os.path.exists(directory):
+        print(f"Files in {directory}:")
+        for file in os.listdir(directory):
+            file_path = os.path.join(directory, file)
+            if os.path.isfile(file_path):
+                print(f"  {file_path}")
+        print("\n")
+    else:
+        print(f"{directory} does not exist.\n")
+
+# Check browser download history (Firefox example)
+def list_firefox_downloads():
+    firefox_profile_dir = str(Path.home() / '.mozilla' / 'firefox')
+    download_history_db = None
+    
+    # Search for the profile directory
+    for profile_dir in os.listdir(firefox_profile_dir):
+        if profile_dir.endswith('.default-release') or profile_dir.endswith('.default'):
+            download_history_db = os.path.join(firefox_profile_dir, profile_dir, 'places.sqlite')
+            break
+    
+    if download_history_db and os.path.exists(download_history_db):
+        print("Firefox Download History:")
+        conn = sqlite3.connect(download_history_db)
+        cursor = conn.cursor()
+        
+        # Query the downloads table in the places.sqlite
+        cursor.execute("SELECT source, target FROM moz_downloads WHERE target IS NOT NULL")
+        downloads = cursor.fetchall()
+        
+        for download in downloads:
+            source, target = download
+            print(f"  Downloaded from: {source} to: {target}")
+        
+        conn.close()
+        print("\n")
+    else:
+        print("No Firefox download history found.\n")
+
+# Check Chrome download history (using SQLite)
+def list_chrome_downloads():
+    chrome_profile_dir = str(Path.home() / '.config' / 'google-chrome' / 'Default')
+    download_history_db = os.path.join(chrome_profile_dir, 'History')
+    
+    if os.path.exists(download_history_db):
+        print("Chrome Download History:")
+        conn = sqlite3.connect(download_history_db)
+        cursor = conn.cursor()
+        
+        # Query the downloads table in the History database
+        cursor.execute("SELECT target_path FROM downloads WHERE target_path IS NOT NULL")
+        downloads = cursor.fetchall()
+        
+        for download in downloads:
+            target = download[0]
+            print(f"  Downloaded to: {target}")
+        
+        conn.close()
+        print("\n")
+    else:
+        print("No Chrome download history found.\n")
+
+# Main function to list downloaded files from various sources
+def show_downloads():
+    # List files from common download directories
+    for directory in download_dirs:
+        list_downloaded_files(directory)
+
+    # List downloads from Firefox history
+    list_firefox_downloads()
+
+    # List downloads from Chrome history
+    list_chrome_downloads()
+
+if __name__ == "__main__":
+    show_downloads()

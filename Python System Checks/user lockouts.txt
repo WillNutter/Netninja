@@ -1,0 +1,45 @@
+# sudo python3 show_user_lockouts.py
+
+
+import re
+import os
+from datetime import datetime
+
+# Function to parse /var/log/auth.log for user lockout events
+def parse_auth_log_for_lockouts():
+    auth_log = '/var/log/auth.log'
+
+    if not os.path.exists(auth_log):
+        print(f"Log file {auth_log} does not exist.")
+        return
+
+    # Define a pattern to match lockout events
+    # This pattern looks for PAM-related messages about account lockouts
+    lockout_pattern = r"(.*?)(sshd|login):.*?(Failed password|Authentication failure).*?for\s(\S+)\sfrom\s(\S+).*?account\stemporarily\slocked"
+    
+    # Open the auth.log file and search for lockout messages
+    with open(auth_log, 'r') as f:
+        lockouts = []
+        for line in f:
+            match = re.search(lockout_pattern, line)
+            if match:
+                timestamp = line.split(' ')[0:3]
+                timestamp = ' '.join(timestamp)
+                timestamp = datetime.strptime(timestamp, "%b %d %H:%M:%S")
+                user = match.group(4)
+                ip_address = match.group(5)
+                lockouts.append({'timestamp': timestamp, 'user': user, 'ip': ip_address})
+                
+    return lockouts
+
+# Function to print lockout information
+def display_lockouts(lockouts):
+    if not lockouts:
+        print("No user lockouts found.")
+        return
+    
+    print("\nUser Lockout Events:")
+    print("---------------------")
+    
+    for lockout in lockouts:
+        print(f"User: {lockout['user']}, IP Address

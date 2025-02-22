@@ -1,0 +1,58 @@
+import time
+from datetime import datetime
+
+class TimeClock:
+    def __init__(self):
+        self.records = []
+
+    def punch_in(self):
+        self.punch_in_time = datetime.now()
+        print(f"Punch In: {self.punch_in_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    def punch_out(self):
+        self.punch_out_time = datetime.now()
+        print(f"Punch Out: {self.punch_out_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # Calculate the time worked
+        time_worked = self.punch_out_time - self.punch_in_time
+        self.records.append({"in": self.punch_in_time, "out": self.punch_out_time, "worked": time_worked})
+        print(f"Total time worked: {time_worked}")
+
+    def show_records(self):
+        if not self.records:
+            print("No time clock records available.")
+        else:
+            print("\nTime Clock Records:")
+            for index, record in enumerate(self.records):
+                print(f"Record {index + 1}:")
+                print(f"  Punch In: {record['in'].strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"  Punch Out: {record['out'].strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"  Total Worked: {record['worked']}")
+                print()
+
+def main():
+    time_clock = TimeClock()
+
+    while True:
+        print("\nTime Clock System:")
+        print("1. Punch In")
+        print("2. Punch Out")
+        print("3. Show Time Records")
+        print("4. Exit")
+        
+        choice = input("Enter your choice (1/2/3/4): ")
+
+        if choice == '1':
+            time_clock.punch_in()
+        elif choice == '2':
+            time_clock.punch_out()
+        elif choice == '3':
+            time_clock.show_records()
+        elif choice == '4':
+            print("Exiting the Time Clock System. Goodbye!")
+            break
+        else:
+            print("Invalid input. Please try again.")
+
+if __name__ == "__main__":
+    main()

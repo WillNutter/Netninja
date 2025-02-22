@@ -1,0 +1,19 @@
+import time
+from datetime import datetime
+
+def show_time():
+    while True:
+        # Get the current time
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Clear the screen (works for most terminals/command prompts)
+        print("\033c", end="")
+        
+        # Print the current time
+        print(f"Current Time: {current_time}")
+        
+        # Wait for one second before updating the time
+        time.sleep(1)
+
+if __name__ == "__main__":
+    show_time()

@@ -1,0 +1,76 @@
+# PowerShell Script to List Local Accounts, Domain Accounts, Administrators, and Abnormal Accounts with Escalated Privileges
+
+# Function to get the permissions for a given local account
+function Get-AccountPermissions {
+    param (
+        [string]$AccountName
+    )
+    
+    $permissions = Get-LocalUser $AccountName | Get-LocalGroupMember
+    $permissionsList = $permissions | ForEach-Object { $_.Name }
+    return $permissionsList -join ", "
+}
+
+# Function to get all local accounts and their permissions
+function Get-LocalAccounts {
+    Write-Host "`n--- Local Accounts ---"
+    
+    $localAccounts = Get-LocalUser
+    foreach ($account in $localAccounts) {
+        $permissions = Get-AccountPermissions -AccountName $account.Name
+        Write-Host "$($account.Name) - Permissions: $permissions"
+    }
+}
+
+# Function to get all domain accounts and their permissions
+function Get-DomainAccounts {
+    Write-Host "`n--- Domain Accounts ---"
+    
+    $domainUsers = Get-ADUser -Filter * -Properties MemberOf
+    foreach ($user in $domainUsers) {
+        $permissions = $user.MemberOf -join ", "
+        Write-Host "$($user.SamAccountName) - Permissions: $permissions"
+    }
+}
+
+# Function to get all administrator accounts and their rights
+function Get-Administrators {
+    Write-Host "`n--- Administrators ---"
+    
+    $admins = Get-LocalGroupMember -Group "Administrators"
+    foreach ($admin in $admins) {
+        $permissions = Get-AccountPermissions -AccountName $admin.Name
+        Write-Host "$($admin.Name) - Permissions: $permissions"
+    }
+}
+
+# Function to get abnormal accounts with escalated privileges
+function Get-AbnormalAccounts {
+    Write-Host "`n--- Abnormal Accounts ---"
+    
+    # Get all accounts that are neither local nor domain accounts
+    $localAccounts = Get-LocalUser
+    $domainUsers = Get-ADUser -Filter * -Properties SamAccountName
+
+    # Combine both and check for anomalies
+    $allUsers = Get-LocalUser | Select-Object -ExpandProperty Name
+    foreach ($user in $allUsers) {
+        if ($user -notin $domainUsers.SamAccountName) {
+            Write-Host "Abnormal account: $user - Possibly unauthorized or non-standard"
+        }
+    }
+}
+
+# Main Script Execution
+
+# 1. Local Accounts with Permissions
+Get-LocalAccounts
+
+# 2. Domain Accounts with Permissions
+Get-DomainAccounts
+
+# 3. Administrators and Their Rights
+Get-Administrators
+
+# 4. Abnormal Accounts (non-domain or non-standard accounts)
+Get-AbnormalAccounts

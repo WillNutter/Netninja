@@ -1,0 +1,61 @@
+# PowerShell Script to Create Domain and Organizational Units (OUs) and Notify When Done
+
+# Set variables for the domain configuration
+$domainName = "example.com"             # The fully qualified domain name (e.g., example.com)
+$safeModePassword = "P@ssw0rd!"         # The password for Directory Services Restore Mode (DSRM)
+$NetBIOSName = "EXAMPLE"                # The NetBIOS name of the domain (e.g., EXAMPLE)
+$dnsIPAddress = "192.168.1.1"           # Set your DNS server IP address (can be same as server IP)
+
+# Define Organizational Units (OUs) to create within the domain
+$organizationalUnits = @(
+    "Users",
+    "Computers",
+    "Servers",
+    "HR",
+    "Finance"
+)
+
+# Step 1: Promote the server to a Domain Controller
+Write-Host "Promoting this server to a Domain Controller in domain $domainName..."
+
+Install-ADDSDomain `
+    -DomainName $domainName `
+    -SafeModeAdministratorPassword (ConvertTo-SecureString $safeModePassword -AsPlainText -Force) `
+    -InstallDNS `
+    -NoGlobalCatalog:$false `
+    -Force
+
+if ($?) {
+    Write-Host "Server is being promoted to a Domain Controller."
+} else {
+    Write-Host "There was an error during the promotion process."
+    exit 1
+}
+
+# Step 2: Wait for the promotion to finish (after restart)
+Write-Host "Promotion complete. Waiting for the server to restart and the domain to become operational..."
+
+# Wait for the server to be fully operational after the promotion
+Start-Sleep -Seconds 120 # Allow 2 minutes for the domain controller to fully initialize (can be adjusted)
+
+# Step 3: Create Organizational Units (OUs)
+Write-Host "Creating Organizational Units (OUs)..."
+
+foreach ($ou in $organizationalUnits) {
+    try {
+        New-ADOrganizationalUnit -Name $ou -Path "DC=$domainName" -Description "Organizational Unit for $ou"
+        Write-Host "OU '$ou' created successfully."
+    }
+    catch {
+        Write-Host "Error creating OU '$ou': $_"
+    }
+}
+
+# Step 4: Notify that the domain and OUs were created successfully
+Write-Host "Domain '$domainName' has been created successfully, and OUs have been set up."
+
+# Optionally send an email notification (if you have a mail system in place)
+# Example using Send-MailMessage to send an email (make sure to configure SMTP)
+# Send-MailMessage -From "admin@$domainName" -To "admin@example.com" -Subject "Domain and OUs Created" -Body "The domain $domainName and its OUs have been successfully created." -SmtpServer "smtp.example.com"
+
+Write-Host "Domain creation and OU setup completed successfully!"

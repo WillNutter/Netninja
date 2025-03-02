@@ -1,0 +1,172 @@
+# PowerShell script to manage users and groups (domain/local)
+
+# Function to create a domain group if it doesn't exist
+function Create-DomainGroup {
+    param (
+        [string]$GroupName
+    )
+    if (-not (Get-ADGroup -Filter "Name -eq '$GroupName'" -ErrorAction SilentlyContinue)) {
+        Write-Host "Group '$GroupName' does not exist. Creating group..."
+        New-ADGroup -Name $GroupName -GroupScope Global -Path "CN=Users,DC=yourdomain,DC=com"
+        Write-Host "Group '$GroupName' created successfully."
+    } else {
+        Write-Host "Group '$GroupName' already exists."
+    }
+}
+
+# Function to create a local group if it doesn't exist
+function Create-LocalGroup {
+    param (
+        [string]$GroupName
+    )
+    if (-not (Get-LocalGroup -Name $GroupName -ErrorAction SilentlyContinue)) {
+        Write-Host "Group '$GroupName' does not exist. Creating group..."
+        New-LocalGroup -Name $GroupName
+        Write-Host "Group '$GroupName' created successfully."
+    } else {
+        Write-Host "Group '$GroupName' already exists."
+    }
+}
+
+# Function to add a domain user to a domain group
+function Add-DomainUserToGroup {
+    param (
+        [string]$UserName,
+        [string]$GroupName
+    )
+    # Create the domain group if it doesn't exist
+    Create-DomainGroup -GroupName $GroupName
+
+    Write-Host "Adding user '$UserName' to domain group '$GroupName'..."
+    Add-ADGroupMember -Identity $GroupName -Members $UserName
+    Write-Host "User '$UserName' added to domain group '$GroupName'."
+}
+
+# Function to add a local user to a local group
+function Add-LocalUserToGroup {
+    param (
+        [string]$UserName,
+        [string]$GroupName
+    )
+    # Create the local group if it doesn't exist
+    Create-LocalGroup -GroupName $GroupName
+
+    Write-Host "Adding user '$UserName' to local group '$GroupName'..."
+    Add-LocalGroupMember -Group $GroupName -Member $UserName
+    Write-Host "User '$UserName' added to local group '$GroupName'."
+}
+
+# Function to delete a domain group
+function Delete-DomainGroup {
+    param (
+        [string]$GroupName
+    )
+    Write-Host "Deleting domain group '$GroupName'..."
+    Remove-ADGroup -Identity $GroupName
+    Write-Host "Domain group '$GroupName' deleted successfully."
+}
+
+# Function to delete a local group
+function Delete-LocalGroup {
+    param (
+        [string]$GroupName
+    )
+    Write-Host "Deleting local group '$GroupName'..."
+    Remove-LocalGroup -Name $GroupName
+    Write-Host "Local group '$GroupName' deleted successfully."
+}
+
+# Function to enumerate domain groups and their users
+function Enumerate-DomainGroups {
+    Write-Host "`n--- Domain Groups and Users ---"
+    $groups = Get-ADGroup -Filter *
+    foreach ($group in $groups) {
+        $groupName = $group.Name
+        $users = Get-ADGroupMember -Identity $groupName
+        Write-Host "$groupName:"
+        foreach ($user in $users) {
+            Write-Host "    $($user.SamAccountName)"
+        }
+    }
+}
+
+# Function to enumerate local groups and their users
+function Enumerate-LocalGroups {
+    Write-Host "`n--- Local Groups and Users ---"
+    $localGroups = Get-LocalGroup
+    foreach ($group in $localGroups) {
+        $groupName = $group.Name
+        $users = Get-LocalGroupMember -Group $groupName
+        Write-Host "$groupName:"
+        foreach ($user in $users) {
+            Write-Host "    $($user.Name)"
+        }
+    }
+}
+
+# Main script execution
+do {
+    Write-Host "`nSelect an action to perform:
+    1) Assign a domain user to a domain group
+    2) Assign a local user to a local group
+    3) Delete a domain group
+    4) Delete a local group
+    5) Enumerate domain groups and users
+    6) Enumerate local groups and users
+    7) Exit"
+
+    $action = Read-Host "Enter a number"
+
+    switch ($action) {
+        1 {
+            # Assign a domain user to a domain group
+            $userName = Read-Host "Enter the domain username (e.g., DOMAIN\username)"
+            $groupName = Read-Host "Enter the domain group name"
+            Add-DomainUserToGroup -UserName $userName -GroupName $groupName
+            break
+        }
+        2 {
+            # Assign a local user to a local group
+            $userName = Read-Host "Enter the local username"
+            $groupName = Read-Host "Enter the local group name"
+            Add-LocalUserToGroup -UserName $userName -GroupName $groupName
+            break
+        }
+        3 {
+            # Delete a domain group
+            $groupName = Read-Host "Enter the domain group name to delete"
+            $deleteGroup = Read-Host "Are you sure you want to delete the domain group '$groupName' (y/n)?"
+            if ($deleteGroup -eq 'y') {
+                Delete-DomainGroup -GroupName $groupName
+            }
+            break
+        }
+        4 {
+            # Delete a local group
+            $groupName = Read-Host "Enter the local group name to delete"
+            $deleteGroup = Read-Host "Are you sure you want to delete the local group '$groupName' (y/n)?"
+            if ($deleteGroup -eq 'y') {
+                Delete-LocalGroup -GroupName $groupName
+            }
+            break
+        }
+        5 {
+            # Enumerate domain groups and users
+            Enumerate-DomainGroups
+            break
+        }
+        6 {
+            # Enumerate local groups and users
+            Enumerate-LocalGroups
+            break
+        }
+        7 {
+            # Exit the script
+            Write-Host "Exiting script."
+            break
+        }
+        default {
+            Write-Host "Invalid selection. Please choose a valid option."
+        }
+    }
+} while ($action -ne 7)

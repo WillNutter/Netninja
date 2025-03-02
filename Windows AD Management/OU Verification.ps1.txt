@@ -1,0 +1,3 @@
+Get-ADDomain
+
+Get-ADOrganizationalUnit -Filter * -SearchBase "DC=$domainName"

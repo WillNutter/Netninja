@@ -1,0 +1,11 @@
+# Check the domain controller status
+Get-ADDomainController
+
+# Check the domain name
+Get-ADDomain
+
+# Verify if the server is DNS-enabled (if applicable)
+Get-DnsServer
+
+# Verify global catalog status
+Get-ADDomainController -Filter {IsGlobalCatalog -eq $true}

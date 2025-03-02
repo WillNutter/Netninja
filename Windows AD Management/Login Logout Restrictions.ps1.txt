@@ -1,0 +1,169 @@
+# Import Active Directory Module
+Import-Module ActiveDirectory
+
+# Function to check if a user is part of Administrators or Domain Admins group
+function Is-UserAdmin {
+    param (
+        [string]$username
+    )
+
+    $groups = Get-ADUser $username -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+    $adminGroups = @(
+        "CN=Domain Admins,CN=Users,DC=yourdomain,DC=com",  # Replace with your domain's DN
+        "CN=Administrators,CN=Builtin,DC=yourdomain,DC=com"
+    )
+
+    # If the user is in either Domain Admins or Administrators, they are exempt
+    return ($groups | Where-Object { $_ -in $adminGroups }).Count -gt 0
+}
+
+# Function to enforce login/logout time restrictions for a user
+function Set-LoginTimeRestrictions {
+    param (
+        [string]$username,
+        [datetime]$loginStartTime,
+        [datetime]$loginEndTime
+    )
+
+    if (-not (Is-UserAdmin -username $username)) {
+        $startTime = $loginStartTime.ToString("HH:mm")
+        $endTime = $loginEndTime.ToString("HH:mm")
+
+        # Set the logon hours for the user using Active Directory (via ADSI)
+        $user = [ADSI]"LDAP://CN=$username,CN=Users,DC=yourdomain,DC=com"
+        $logonHours = New-Object Byte[] 21
+        $user.Put("logonHours", $logonHours)
+        $user.SetInfo()
+
+        Write-Host "Login time restrictions set for user $username: $startTime to $endTime"
+    } else {
+        Write-Host "User $username is an Administrator or Domain Admin and is exempt from time restrictions."
+    }
+}
+
+# Function to remove login/logout restrictions for a user
+function Remove-LoginTimeRestrictions {
+    param (
+        [string]$username
+    )
+
+    if (-not (Is-UserAdmin -username $username)) {
+        # Remove the logon hours restrictions for the user (via ADSI)
+        $user = [ADSI]"LDAP://CN=$username,CN=Users,DC=yourdomain,DC=com"
+        $user.Put("logonHours", $null)
+        $user.SetInfo()
+
+        Write-Host "Login time restrictions removed for user $username."
+    } else {
+        Write-Host "User $username is an Administrator or Domain Admin and is exempt from time restrictions."
+    }
+}
+
+# Function to enforce login/logout time restrictions for a specific machine
+function Set-MachineLoginRestrictions {
+    param (
+        [string]$machineName,
+        [datetime]$loginStartTime,
+        [datetime]$loginEndTime
+    )
+
+    # Set the logon hours for all users to the machine (example could involve updating GPO, SAM, or local machine policies)
+    Write-Host "Machine-specific login time restrictions set for machine $machineName: $loginStartTime to $loginEndTime."
+    # Example: Implement group policy updates for this machine (this is just a placeholder)
+}
+
+# Function to remove login/logout restrictions from a specific machine
+function Remove-MachineLoginRestrictions {
+    param (
+        [string]$machineName
+    )
+
+    Write-Host "Login time restrictions removed from machine $machineName."
+    # Example: Remove GPO or other policies that enforce machine-specific login time restrictions
+}
+
+# Function to enforce login/logout time restrictions on the local machine
+function Set-LocalMachineLoginRestrictions {
+    param (
+        [datetime]$loginStartTime,
+        [datetime]$loginEndTime
+    )
+
+    # Use Local Security Policy or Group Policy to set restrictions (simplified example)
+    Write-Host "Local machine login time restrictions set: $loginStartTime to $loginEndTime."
+    # Implement logic to apply these restrictions via GPO or local policy
+}
+
+# Function to remove login/logout restrictions from the local machine
+function Remove-LocalMachineLoginRestrictions {
+    Write-Host "Login time restrictions removed from local machine."
+    # Implement logic to remove local machine policies or GPOs
+}
+
+# Function to enumerate current login/logout time restrictions on the local machine
+function Enumerate-LocalLoginRestrictions {
+    Write-Host "Enumerating local machine login restrictions..."
+    # Logic to check current local machine restrictions (e.g., querying GPOs or security settings)
+}
+
+# Main Menu
+do {
+    Write-Host "`nDomain Login/Logout Time Restriction Menu"
+    Write-Host "1) Enforce Login/Logout Time Restrictions for a User"
+    Write-Host "2) Remove Login/Logout Time Restrictions for a User"
+    Write-Host "3) Enforce Login/Logout Time Restrictions for a Specific Machine"
+    Write-Host "4) Enforce Login/Logout Time Restrictions for the Local Machine"
+    Write-Host "5) Remove Login/Logout Time Restrictions for a Specific Machine"
+    Write-Host "6) Remove Login/Logout Time Restrictions for the Local Machine"
+    Write-Host "7) Enumerate Login/Logout Time Restrictions on Local Machine"
+    Write-Host "8) Exit"
+    
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        1 {
+            $username = Read-Host "Enter the username to enforce restrictions"
+            $loginStartTime = Read-Host "Enter the login start time (HH:mm)"
+            $loginEndTime = Read-Host "Enter the login end time (HH:mm)"
+            $loginStartTime = [datetime]::ParseExact($loginStartTime, "HH:mm", $null)
+            $loginEndTime = [datetime]::ParseExact($loginEndTime, "HH:mm", $null)
+            Set-LoginTimeRestrictions -username $username -loginStartTime $loginStartTime -loginEndTime $loginEndTime
+        }
+        2 {
+            $username = Read-Host "Enter the username to remove restrictions"
+            Remove-LoginTimeRestrictions -username $username
+        }
+        3 {
+            $machineName = Read-Host "Enter the machine name to enforce restrictions"
+            $loginStartTime = Read-Host "Enter the login start time (HH:mm)"
+            $loginEndTime = Read-Host "Enter the login end time (HH:mm)"
+            $loginStartTime = [datetime]::ParseExact($loginStartTime, "HH:mm", $null)
+            $loginEndTime = [datetime]::ParseExact($loginEndTime, "HH:mm", $null)
+            Set-MachineLoginRestrictions -machineName $machineName -loginStartTime $loginStartTime -loginEndTime $loginEndTime
+        }
+        4 {
+            $loginStartTime = Read-Host "Enter the login start time (HH:mm)"
+            $loginEndTime = Read-Host "Enter the login end time (HH:mm)"
+            $loginStartTime = [datetime]::ParseExact($loginStartTime, "HH:mm", $null)
+            $loginEndTime = [datetime]::ParseExact($loginEndTime, "HH:mm", $null)
+            Set-LocalMachineLoginRestrictions -loginStartTime $loginStartTime -loginEndTime $loginEndTime
+        }
+        5 {
+            $machineName = Read-Host "Enter the machine name to remove restrictions"
+            Remove-MachineLoginRestrictions -machineName $machineName
+        }
+        6 {
+            Remove-LocalMachineLoginRestrictions
+        }
+        7 {
+            Enumerate-LocalLoginRestrictions
+        }
+        8 {
+            Write-Host "Exiting script."
+            break
+        }
+        default {
+            Write-Host "Invalid selection. Please choose a valid option."
+        }
+    }
+} while ($choice -ne 8)

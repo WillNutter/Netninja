@@ -1,0 +1,101 @@
+# PowerShell Script to Add Computer, Printer, or Other Objects to Active Directory Domain
+
+# Function to Create OU if it doesn't exist
+function Create-OUIfNotExist {
+    param (
+        [string]$OUName,
+        [string]$DomainName
+    )
+    
+    # Check if the OU exists
+    $ouPath = "OU=$OUName,DC=" + ($DomainName -split "\.") -join ",DC="
+    $ouExist = Get-ADOrganizationalUnit -Filter {DistinguishedName -eq $ouPath} -ErrorAction SilentlyContinue
+
+    if ($ouExist) {
+        Write-Host "OU '$OUName' already exists."
+    } else {
+        # Create the OU
+        Write-Host "OU '$OUName' does not exist. Creating now..."
+        New-ADOrganizationalUnit -Name $OUName -Path "DC=$DomainName" -Description "Organizational Unit for $OUName"
+        Write-Host "OU '$OUName' created successfully."
+    }
+}
+
+# Function to Assign Rights to Users for an Object
+function Assign-RightsToUsers {
+    param (
+        [string]$ObjectName,
+        [string]$OUName,
+        [string]$DomainName,
+        [string[]]$Users
+    )
+
+    # Assign rights (simplified for example)
+    Write-Host "Assigning rights to the following users for object '$ObjectName' in OU '$OUName':"
+    foreach ($user in $Users) {
+        Write-Host "Assigning rights to user: $user"
+        # For simplicity, add users to a group or assign permissions (this is an example, you can extend it)
+        try {
+            # Create a new group (if necessary)
+            $groupName = "$ObjectName-Group"
+            if (-not (Get-ADGroup -Filter {Name -eq $groupName} -ErrorAction SilentlyContinue)) {
+                New-ADGroup -Name $groupName -GroupScope Global -Path "OU=$OUName,DC=" + ($DomainName -split "\.") -join ",DC=" -Description "Group for $ObjectName"
+            }
+            Add-ADGroupMember -Identity $groupName -Members $user
+            Write-Host "User '$user' added to group '$groupName' for '$ObjectName'."
+        }
+        catch {
+            Write-Host "Failed to assign rights to user '$user': $_"
+        }
+    }
+}
+
+# Main Script Execution
+
+# Ask for the object type (Computer, Printer, or other)
+$objectType = Read-Host "Enter the type of object to add (Computer, Printer, Other)"
+
+# Ask for the AD domain and the OU where the object will be added
+$domainName = Read-Host "Enter the Active Directory Domain name (e.g., example.com)"
+$ouName = Read-Host "Enter the Organizational Unit (OU) where the object will be added (e.g., Computers, Printers, etc.)"
+
+# Check if the OU exists and create it if necessary
+Create-OUIfNotExist -OUName $ouName -DomainName $domainName
+
+# Add the object to Active Directory
+if ($objectType -eq "Computer") {
+    # Add a Computer to the domain
+    $computerName = Read-Host "Enter the name of the computer"
+    $computerOUPath = "OU=$ouName,DC=" + ($domainName -split "\.") -join ",DC="
+    
+    Write-Host "Adding computer '$computerName' to the domain '$domainName' in OU '$ouName'..."
+    New-ADComputer -Name $computerName -Path $computerOUPath -Enabled $true
+    Write-Host "Computer '$computerName' added to the domain."
+
+} elseif ($objectType -eq "Printer") {
+    # Add a Printer to the domain (this is more of a placeholder for your needs)
+    $printerName = Read-Host "Enter the name of the printer"
+    $printerOUPath = "OU=$ouName,DC=" + ($domainName -split "\.") -join ",DC="
+    
+    Write-Host "Adding printer '$printerName' to the domain '$domainName' in OU '$ouName'..."
+    New-ADObject -Name $printerName -Type "printer" -Path $printerOUPath
+    Write-Host "Printer '$printerName' added to the domain."
+
+} else {
+    # Handle other types of objects
+    $objectName = Read-Host "Enter the name of the object (e.g., Device, Resource, etc.)"
+    $objectOUPath = "OU=$ouName,DC=" + ($domainName -split "\.") -join ",DC="
+    
+    Write-Host "Adding object '$objectName' to the domain '$domainName' in OU '$ouName'..."
+    New-ADObject -Name $objectName -Type "organizationalUnit" -Path $objectOUPath
+    Write-Host "Object '$objectName' added to the domain."
+}
+
+# Ask for the users to assign rights to the object
+$userInput = Read-Host "Enter the usernames (comma separated) who will have rights to this object"
+$userNames = $userInput -split ","
+
+# Assign rights to users for this object
+Assign-RightsToUsers -ObjectName $objectName -OUName $ouName -DomainName $domainName -Users $userNames
+
+Write-Host "Object '$objectName' has been added to the domain and rights have been assigned to the specified users."

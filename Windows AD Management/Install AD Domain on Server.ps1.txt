@@ -1,0 +1,48 @@
+# PowerShell Script to Install AD DS Role and Promote the Server to a Domain Controller
+
+# Step 1: Install the Active Directory Domain Services role
+Write-Host "Installing the Active Directory Domain Services role..."
+
+Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+
+if ($?) {
+    Write-Host "Active Directory Domain Services role installed successfully."
+} else {
+    Write-Host "Failed to install Active Directory Domain Services role."
+    exit 1
+}
+
+# Step 2: Promote the server to a Domain Controller (DC)
+# We need to define the necessary variables for domain creation.
+
+# Set the domain name, safe mode administrator password, and NetBIOS name
+$domainName = "example.com" # Replace with your desired domain name
+$safeModePassword = "P@ssw0rd!" # Replace with a strong password for Directory Services Restore Mode (DSRM)
+$NetBIOSName = "EXAMPLE" # Replace with your desired NetBIOS name
+
+# Optionally, you can specify DNS settings if required (this is needed for domain controllers to act as DNS servers)
+$dnsIPAddress = "192.168.1.1" # Set your DNS server IP if necessary (can be the same server or an existing DNS server)
+
+Write-Host "Promoting this server to a Domain Controller..."
+
+# Promote to Domain Controller and create a new domain
+$promotionResult = Install-ADDSDomainController `
+    -DomainName $domainName `
+    -SafeModeAdministratorPassword (ConvertTo-SecureString $safeModePassword -AsPlainText -Force) `
+    -InstallDNS `
+    -NoGlobalCatalog $false `
+    -Force
+
+if ($promotionResult) {
+    Write-Host "The server is being promoted to a Domain Controller."
+} else {
+    Write-Host "There was an error while promoting the server to a Domain Controller."
+    exit 1
+}
+
+# Step 3: Restart the server for changes to take effect
+Write-Host "Rebooting the server for the domain controller promotion to take effect..."
+
+Restart-Computer -Force
+
+Write-Host "Server successfully promoted to a Domain Controller. The system will reboot now."

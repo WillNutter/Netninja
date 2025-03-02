@@ -1,0 +1,81 @@
+# PowerShell Script to Join Machine to AD Domain, Manage Local Users, and Add Domain Users
+
+# Function to join the machine to the AD domain
+function Join-ADDomain {
+    param (
+        [string]$DomainName,
+        [string]$DomainUser,
+        [securestring]$DomainPassword
+    )
+    
+    # Join the computer to the domain
+    try {
+        Add-Computer -DomainName $DomainName -Credential (New-Object System.Management.Automation.PSCredential($DomainUser, $DomainPassword)) -Restart
+        Write-Host "Machine successfully joined to the domain '$DomainName'. The machine will now restart."
+    }
+    catch {
+        Write-Host "Error joining machine to the domain: $_"
+    }
+}
+
+# Function to delete all local users except Administrator
+function Delete-LocalUsers {
+    # Get all local users except the Administrator
+    $localUsers = Get-LocalUser | Where-Object { $_.Name -ne 'Administrator' }
+    
+    # Confirm before deleting users
+    foreach ($user in $localUsers) {
+        try {
+            Remove-LocalUser -Name $user.Name
+            Write-Host "Deleted local user '$($user.Name)'"
+        }
+        catch {
+            Write-Host "Failed to delete local user '$($user.Name)': $_"
+        }
+    }
+}
+
+# Function to add a domain user to the local machine
+function Add-DomainUserToLocalMachine {
+    param (
+        [string]$DomainUsername
+    )
+    
+    # Add the domain user to the local machine (as a member of local 'Users' group)
+    try {
+        Add-LocalGroupMember -Group "Users" -Member $DomainUsername
+        Write-Host "Domain user '$DomainUsername' added to the local 'Users' group."
+    }
+    catch {
+        Write-Host "Failed to add domain user '$DomainUsername' to the local machine: $_"
+    }
+}
+
+# Main Script Execution
+
+# Ask for domain credentials
+$domainName = Read-Host "Enter the AD domain name (e.g., example.com)"
+$domainUser = Read-Host "Enter the AD domain username (e.g., admin@example.com)"
+$domainPassword = Read-Host "Enter the AD domain password" -AsSecureString
+
+# Step 1: Ask if you want to delete local users except for Administrator
+$deleteUsers = Read-Host "Do you want to delete all local users except 'Administrator'? (Yes/No)"
+if ($deleteUsers -eq "Yes") {
+    Delete-LocalUsers
+} else {
+    Write-Host "Skipping local user deletion."
+}
+
+# Step 2: Join the machine to the domain
+Join-ADDomain -DomainName $domainName -DomainUser $domainUser -DomainPassword $domainPassword
+
+# Step 3: Ask if there are domain users to add to the local machine
+$addDomainUsers = "Yes"
+while ($addDomainUsers -eq "Yes") {
+    $domainUsername = Read-Host "Enter the domain username to add to the local machine (e.g., user@example.com)"
+    Add-DomainUserToLocalMachine -DomainUsername $domainUsername
+    
+    $addDomainUsers = Read-Host "Do you want to add another domain user? (Yes/No)"
+}
+
+Write-Host "Process complete. The machine has been joined to the domain and domain users have been added."

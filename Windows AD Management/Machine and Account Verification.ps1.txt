@@ -1,0 +1,67 @@
+# PowerShell Script to Show Domain Users, Check if the Machine is on or off the Domain, and Show its Status
+
+# Function to get domain users added to the local machine
+function Get-DomainUsers {
+    try {
+        # Get all local group members that are domain users
+        $domainUsers = Get-LocalGroupMember -Group "Users" | Where-Object { $_.Name -like "*\\*" }
+        
+        if ($domainUsers) {
+            Write-Host "Domain users added to this machine:"
+            $domainUsers | ForEach-Object { Write-Host $_.Name }
+        } else {
+            Write-Host "No domain users found on this machine."
+        }
+    }
+    catch {
+        Write-Host "Error fetching domain users: $_"
+    }
+}
+
+# Function to check if the machine is joined to a domain
+function Get-MachineDomainStatus {
+    try {
+        # Get the current machine's domain status
+        $computer = Get-WmiObject -Class Win32_ComputerSystem
+        if ($computer.Domain) {
+            Write-Host "This machine is joined to the domain: $($computer.Domain)"
+            Write-Host "Machine is currently ON the domain."
+        } else {
+            Write-Host "This machine is NOT joined to any domain."
+            Write-Host "Machine is OFF the domain."
+        }
+    }
+    catch {
+        Write-Host "Error checking machine domain status: $_"
+    }
+}
+
+# Function to get the current status of the machine (online/offline)
+function Get-MachineStatus {
+    try {
+        # Get the machine's network adapter status
+        $networkStatus = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
+
+        if ($networkStatus) {
+            Write-Host "The machine is online (connected to the network)."
+        } else {
+            Write-Host "The machine is offline (no active network connection)."
+        }
+    }
+    catch {
+        Write-Host "Error checking machine network status: $_"
+    }
+}
+
+# Main Script Execution
+
+Write-Host "Checking machine and domain status..."
+
+# Get Domain Users
+Get-DomainUsers
+
+# Check if the machine is joined to the domain
+Get-MachineDomainStatus
+
+# Check if the machine is online
+Get-MachineStatus

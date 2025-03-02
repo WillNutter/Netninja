@@ -1,0 +1,38 @@
+# PowerShell Script to Promote Windows Server to a Domain Controller
+
+# Set variables for the domain configuration
+$domainName = "example.com"             # The fully qualified domain name (e.g., example.com)
+$safeModePassword = "P@ssw0rd!"         # The password for Directory Services Restore Mode (DSRM)
+$NetBIOSName = "EXAMPLE"                # The NetBIOS name of the domain (e.g., EXAMPLE)
+$installDNS = $true                     # Whether to install DNS server as part of the promotion
+$domainNetbios = "EXAMPLE"              # The domain's NetBIOS name
+$replicaDomainController = $false       # Whether this is a replica DC (set to $false for a new DC)
+
+# If you want to specify the IP address for the DNS server, change the value here
+$dnsIPAddress = "192.168.1.1"           # Set the DNS server IP (can be the same as the server's IP)
+
+# Step 1: Promote the server to a Domain Controller
+Write-Host "Promoting this server to a Domain Controller in domain $domainName..."
+
+Install-ADDSDomainController `
+    -DomainName $domainName `
+    -SafeModeAdministratorPassword (ConvertTo-SecureString $safeModePassword -AsPlainText -Force) `
+    -InstallDNS:$installDNS `
+    -NoGlobalCatalog:$false `
+    -ReplicationSourceDC:$replicaDomainController `
+    -DomainNetbiosName $NetBIOSName `
+    -Force
+
+if ($?) {
+    Write-Host "Server is being promoted to a Domain Controller."
+} else {
+    Write-Host "There was an error during the promotion process."
+    exit 1
+}
+
+# Step 2: Restart the server for the changes to take effect
+Write-Host "Rebooting the server for the domain controller promotion to take effect..."
+
+Restart-Computer -Force
+
+Write-Host "Server successfully promoted to a Domain Controller. The system will reboot now."

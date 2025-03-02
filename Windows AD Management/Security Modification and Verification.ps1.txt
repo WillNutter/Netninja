@@ -1,0 +1,94 @@
+# PowerShell Script to Manage Windows Defender and Firewall Policies on Domain Controller
+
+# Function to turn off Windows Defender
+function Turn-Off-WindowsDefender {
+    Write-Host "Turning off Windows Defender..."
+    Set-MpPreference -DisableRealtimeMonitoring $true
+    Write-Host "Windows Defender is now turned off."
+}
+
+# Function to turn on Windows Defender
+function Turn-On-WindowsDefender {
+    Write-Host "Turning on Windows Defender..."
+    Set-MpPreference -DisableRealtimeMonitoring $false
+    Write-Host "Windows Defender is now turned on."
+}
+
+# Function to turn off Windows Defender Firewall
+function Turn-Off-WindowsFirewall {
+    Write-Host "Turning off Windows Defender Firewall..."
+    Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
+    Write-Host "Windows Defender Firewall is now turned off."
+}
+
+# Function to turn on Windows Defender Firewall
+function Turn-On-WindowsFirewall {
+    Write-Host "Turning on Windows Defender Firewall..."
+    Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+    Write-Host "Windows Defender Firewall is now turned on."
+}
+
+# Function to get the status of Windows Defender and Windows Firewall on all machines in the domain
+function Get-MachineStatus {
+    Write-Host "`nChecking the status of all machines in the domain..."
+
+    # Get all computer accounts in the domain
+    $computers = Get-ADComputer -Filter * -Property Name
+
+    foreach ($computer in $computers) {
+        $computerName = $computer.Name
+        Write-Host "`nChecking status on $computerName..."
+
+        try {
+            # Get Windows Defender status
+            $defenderStatus = Invoke-Command -ComputerName $computerName -ScriptBlock {
+                Get-MpComputerStatus | Select-Object -ExpandProperty RealTimeProtectionEnabled
+            }
+            # Get Firewall status
+            $firewallStatus = Invoke-Command -ComputerName $computerName -ScriptBlock {
+                Get-NetFirewallProfile | Select-Object -ExpandProperty Enabled
+            }
+
+            Write-Host "   $computerName - Windows Defender: $defenderStatus, Windows Firewall: $firewallStatus"
+        }
+        catch {
+            Write-Host "   Error checking status on $computerName: $_"
+        }
+    }
+}
+
+# Main Script Execution
+
+# Display a menu for the user to select which action to perform
+$action = Read-Host "Select an action to perform: 
+1) Turn off Windows Defender
+2) Turn on Windows Defender
+3) Turn off Windows Defender Firewall
+4) Turn on Windows Defender Firewall
+5) Show current status of all machines in the domain"
+
+switch ($action) {
+    1 {
+        Turn-Off-WindowsDefender
+        break
+    }
+    2 {
+        Turn-On-WindowsDefender
+        break
+    }
+    3 {
+        Turn-Off-WindowsFirewall
+        break
+    }
+    4 {
+        Turn-On-WindowsFirewall
+        break
+    }
+    5 {
+        Get-MachineStatus
+        break
+    }
+    default {
+        Write-Host "Invalid selection. Please choose a valid option."
+    }
+}

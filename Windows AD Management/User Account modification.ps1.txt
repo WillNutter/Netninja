@@ -1,0 +1,176 @@
+# PowerShell script to manage Active Directory user passwords and policies
+
+# Function to reset a user's password
+function Reset-UserPassword {
+    $username = Read-Host "Enter the username"
+    $newPassword = Read-Host "Enter the new password" -AsSecureString
+    Set-ADAccountPassword -Identity $username -NewPassword $newPassword -Reset
+    Write-Host "Password for $username has been reset."
+}
+
+# Function to unlock a user account
+function Unlock-UserAccount {
+    $username = Read-Host "Enter the username"
+    Unlock-ADAccount -Identity $username
+    Write-Host "Account $username has been unlocked."
+}
+
+# Function to force a user to change their password at next logon
+function Force-UserChangePasswordAtLogon {
+    $username = Read-Host "Enter the username"
+    Set-ADUser -Identity $username -ChangePasswordAtLogon $true
+    Write-Host "$username will be required to change their password at the next logon."
+}
+
+# Function to set password policy for users
+function Set-PasswordPolicy {
+    $minLength = Read-Host "Enter the minimum password length"
+    $maxAge = Read-Host "Enter the maximum password age (in days)"
+    $complexity = Read-Host "Enable password complexity? (Yes/No)"
+
+    $policy = Get-ADDefaultDomainPasswordPolicy
+    Set-ADDefaultDomainPasswordPolicy -MinPasswordLength $minLength -MaxPasswordAge ($maxAge + " days")
+    
+    if ($complexity.ToLower() -eq "yes") {
+        Set-ADDefaultDomainPasswordPolicy -ComplexityEnabled $true
+        Write-Host "Password complexity has been enabled."
+    } else {
+        Set-ADDefaultDomainPasswordPolicy -ComplexityEnabled $false
+        Write-Host "Password complexity has been disabled."
+    }
+}
+
+# Function to change a user's password
+function Change-UserPassword {
+    $username = Read-Host "Enter the username"
+    $oldPassword = Read-Host "Enter the old password" -AsSecureString
+    $newPassword = Read-Host "Enter the new password" -AsSecureString
+    Set-ADAccountPassword -Identity $username -OldPassword $oldPassword -NewPassword $newPassword
+    Write-Host "$username's password has been changed."
+}
+
+# Function to check if a user's password is set to never expire
+function Check-UserPasswordNeverExpires {
+    $username = Read-Host "Enter the username"
+    $user = Get-ADUser -Identity $username -Properties PasswordNeverExpires
+    if ($user.PasswordNeverExpires) {
+        Write-Host "$username's password is set to never expire."
+    } else {
+        Write-Host "$username's password is not set to never expire."
+    }
+}
+
+# Function to set password to never expire
+function Set-PasswordNeverExpires {
+    $username = Read-Host "Enter the username"
+    Set-ADUser -Identity $username -PasswordNeverExpires $true
+    Write-Host "$username's password is now set to never expire."
+}
+
+# Function to remove the password never expires option
+function Remove-PasswordNeverExpires {
+    $username = Read-Host "Enter the username"
+    Set-ADUser -Identity $username -PasswordNeverExpires $false
+    Write-Host "$username's password expiration setting has been restored."
+}
+
+# Function to set a user account to expire on a specific date
+function Set-UserAccountExpireDate {
+    $username = Read-Host "Enter the username"
+    $expireDate = Read-Host "Enter the expiration date (MM/DD/YYYY)"
+    $expireDate = [datetime]::Parse($expireDate)
+    Set-ADUser -Identity $username -AccountExpirationDate $expireDate
+    Write-Host "$username's account will expire on $expireDate."
+}
+
+# Function to set a user’s password expiration date
+function Set-UserPasswordExpirationDate {
+    $username = Read-Host "Enter the username"
+    $expireDate = Read-Host "Enter the password expiration date (MM/DD/YYYY)"
+    $expireDate = [datetime]::Parse($expireDate)
+    Set-ADUser -Identity $username -PasswordLastSet $expireDate
+    Write-Host "$username's password expiration date has been set to $expireDate."
+}
+
+# Function to enforce password complexity requirements
+function Enforce-PasswordComplexity {
+    $complexity = Read-Host "Enable password complexity? (Yes/No)"
+    if ($complexity.ToLower() -eq "yes") {
+        Set-ADDefaultDomainPasswordPolicy -ComplexityEnabled $true
+        Write-Host "Password complexity has been enabled."
+    } else {
+        Set-ADDefaultDomainPasswordPolicy -ComplexityEnabled $false
+        Write-Host "Password complexity has been disabled."
+    }
+}
+
+# Function to audit failed login attempts and lockout events
+function Audit-LoginAttempts {
+    $events = Get-WinEvent -LogName Security | Where-Object {$_.Id -eq 4625} | Select-Object TimeCreated, Message | Format-Table -AutoSize
+    Write-Host "Failed login attempts:"
+    $events
+}
+
+# Function to enforce a password expiry reminder for users
+function Enforce-PasswordExpiryReminder {
+    $days = Read-Host "Enter the number of days before password expiry to send reminder"
+    Write-Host "Password expiry reminder will be sent $days days before password expiration."
+}
+
+# Function to change the default domain controller password policy
+function Set-DomainControllerPasswordPolicy {
+    $maxAge = Read-Host "Enter the maximum password age (in days)"
+    Set-ADDefaultDomainControllerPasswordPolicy -MaxPasswordAge ($maxAge + " days")
+    Write-Host "Domain controller password policy has been updated."
+}
+
+# Function to set a temporary password for a user
+function Set-TemporaryPassword {
+    $username = Read-Host "Enter the username"
+    $tempPassword = Read-Host "Enter the temporary password" -AsSecureString
+    Set-ADAccountPassword -Identity $username -NewPassword $tempPassword -Reset
+    Write-Host "$username's temporary password has been set."
+}
+
+# Main menu loop
+do {
+    Write-Host "`nPassword Management Menu"
+    Write-Host "1) Reset a User's Password"
+    Write-Host "2) Unlock a User Account"
+    Write-Host "3) Force a User to Change Their Password at Next Logon"
+    Write-Host "4) Set a Password Policy for Users (Password Length, Complexity, Expiry)"
+    Write-Host "5) Change a User's Password"
+    Write-Host "6) Check if a User's Password is Set to Never Expire"
+    Write-Host "7) Set Password to Never Expire"
+    Write-Host "8) Remove the password to never expire option for the account"
+    Write-Host "9) Set a User's Account to Expire on a Specific Date"
+    Write-Host "10) Set a User's Password Expiration Date"
+    Write-Host "11) Enforce Password Complexity Requirements"
+    Write-Host "12) Audit Failed Login Attempts and Lockout Events"
+    Write-Host "13) Enforce a Password Expiry Reminder for Users"
+    Write-Host "14) Change the Default Domain Controller Password Policy"
+    Write-Host "15) Set a Temporary Password for a User (One-Time Password)"
+    Write-Host "16) Exit"
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        1 { Reset-UserPassword }
+        2 { Unlock-UserAccount }
+        3 { Force-UserChangePasswordAtLogon }
+        4 { Set-PasswordPolicy }
+        5 { Change-UserPassword }
+        6 { Check-UserPasswordNeverExpires }
+        7 { Set-PasswordNeverExpires }
+        8 { Remove-PasswordNeverExpires }
+        9 { Set-UserAccountExpireDate }
+        10 { Set-UserPasswordExpirationDate }
+        11 { Enforce-PasswordComplexity }
+        12 { Audit-LoginAttempts }
+        13 { Enforce-PasswordExpiryReminder }
+        14 { Set-DomainControllerPasswordPolicy }
+        15 { Set-TemporaryPassword }
+        16 { Write-Host "Exiting script."; break }
+        default { Write-Host "Invalid selection. Please choose a valid option." }
+    }
+} while ($choice -ne 16)

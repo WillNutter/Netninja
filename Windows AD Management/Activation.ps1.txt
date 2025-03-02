@@ -1,0 +1,83 @@
+# PowerShell Script to Activate Windows Server and Client Editions
+
+# Function to check if Windows is activated
+function Check-ActivationStatus {
+    $status = (slmgr.vbs /dli).ToString()
+    if ($status -match "License Status: (.*)") {
+        $activationStatus = $matches[1]
+        Write-Host "Windows Activation Status: $activationStatus"
+        return $activationStatus
+    }
+    else {
+        Write-Host "Unable to retrieve activation status."
+        return "Unknown"
+    }
+}
+
+# Function to activate Windows using KMS
+function Activate-WindowsKMS {
+    $kmsServer = "your.kms.server" # Replace with your KMS server address or FQDN
+
+    # Set KMS server
+    Write-Host "Setting KMS server to: $kmsServer"
+    slmgr.vbs /skms $kmsServer
+
+    # Activate Windows
+    Write-Host "Activating Windows..."
+    slmgr.vbs /ato
+
+    # Check Activation Status
+    $activationStatus = Check-ActivationStatus
+    if ($activationStatus -eq "Licensed") {
+        Write-Host "Windows successfully activated using KMS."
+    }
+    else {
+        Write-Host "Activation failed. Please check your KMS server and network connection."
+    }
+}
+
+# Check if the system is activated, then activate if needed
+$activationStatus = Check-ActivationStatus
+if ($activationStatus -ne "Licensed") {
+    Write-Host "System is not activated. Attempting to activate..."
+    Activate-WindowsKMS
+}
+else {
+    Write-Host "Windows is already activated."
+}
+
+# Function to handle Windows Client Activation
+function Activate-WindowsClient {
+    $clientEdition = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+    if ($clientEdition -match "Windows 10|Windows 11") {
+        Write-Host "Detected Windows Client: $clientEdition"
+        Activate-WindowsKMS
+    }
+    else {
+        Write-Host "This script is intended for Windows Client editions (Windows 10 or 11)."
+    }
+}
+
+# Function to handle Windows Server Activation
+function Activate-WindowsServer {
+    $serverEdition = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+    if ($serverEdition -match "Windows Server") {
+        Write-Host "Detected Windows Server: $serverEdition"
+        Activate-WindowsKMS
+    }
+    else {
+        Write-Host "This script is intended for Windows Server editions."
+    }
+}
+
+# Main Logic - Check OS type and activate accordingly
+$osType = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+if ($osType -match "Windows Server") {
+    Activate-WindowsServer
+}
+elseif ($osType -match "Windows 10|Windows 11") {
+    Activate-WindowsClient
+}
+else {
+    Write-Host "Unsupported OS. This script is designed for Windows Client (10/11) and Windows Server editions."
+}

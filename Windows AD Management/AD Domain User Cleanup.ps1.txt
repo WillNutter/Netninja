@@ -1,0 +1,118 @@
+# PowerShell script to manage Active Directory domain user accounts
+
+# Function to enumerate domain users
+function Enumerate-DomainUsers {
+    $domainUsers = Get-ADUser -Filter * -Property SamAccountName, Enabled
+    Write-Host "`nDomain Users in Active Directory:"
+    $domainUsers | Select-Object SamAccountName, Enabled | Format-Table -AutoSize
+}
+
+# Function to delete a specific domain user account and its profile
+function Delete-DomainUser {
+    $username = Read-Host "Enter the username to delete"
+    
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to delete the domain user $username? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Delete the domain user account
+        Remove-ADUser -Identity $username -Confirm:$false
+        Write-Host "$username has been deleted from Active Directory."
+
+        # Remove the user profile (if it exists on the file server)
+        $userProfilePath = "\\YourFileServer\Profiles\$username"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $username has been deleted."
+        }
+    } else {
+        Write-Host "Operation cancelled. User $username was not deleted."
+    }
+}
+
+# Function to delete a domain user from Active Directory and remove its profile
+function Delete-DomainUserFromAD {
+    $username = Read-Host "Enter the username to delete from Active Directory"
+    
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to delete the user $username from Active Directory? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Delete the domain user account from AD
+        Remove-ADUser -Identity $username -Confirm:$false
+        Write-Host "$username has been removed from Active Directory."
+    } else {
+        Write-Host "Operation cancelled. User $username was not removed from Active Directory."
+    }
+}
+
+# Function for Clean Sweep: Delete domain user and its profile
+function CleanSweep-DomainUser {
+    $username = Read-Host "Enter the username for a Clean Sweep"
+
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to perform a Clean Sweep for $username? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Delete the domain user account
+        Remove-ADUser -Identity $username -Confirm:$false
+        Write-Host "$username has been deleted from Active Directory."
+
+        # Remove the user profile (if it exists on the file server)
+        $userProfilePath = "\\YourFileServer\Profiles\$username"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $username has been deleted."
+        }
+    } else {
+        Write-Host "Operation cancelled. No changes were made."
+    }
+}
+
+# Function to delete all domain users except Administrator and reset Administrator password
+function Delete-AllDomainUsersExceptAdmin {
+    $domainUsers = Get-ADUser -Filter * -Property SamAccountName
+    $adminUser = "Administrator"
+
+    # Get a list of all domain users except Administrator
+    $usersToDelete = $domainUsers | Where-Object { $_.SamAccountName -ne $adminUser }
+
+    foreach ($user in $usersToDelete) {
+        # Delete the user account
+        Remove-ADUser -Identity $user.SamAccountName -Confirm:$false
+        Write-Host "User $($user.SamAccountName) has been deleted from Active Directory."
+        
+        # Remove the user's profile directory from the file server (if it exists)
+        $userProfilePath = "\\YourFileServer\Profiles\$($user.SamAccountName)"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $($user.SamAccountName) has been deleted."
+        }
+    }
+
+    # Reset the Administrator account's password to "password" and require a password change at next login
+    $admin = Get-ADUser -Identity $adminUser
+    Set-ADAccountPassword -Identity $adminUser -NewPassword (ConvertTo-SecureString "password" -AsPlainText -Force) -Reset
+    Set-ADUser -Identity $adminUser -ChangePasswordAtLogon $true
+    Write-Host "`nThe Administrator account's password has been reset to 'password' and must be changed at the next login."
+}
+
+# Main menu loop
+do {
+    Write-Host "`nDomain User Management Menu"
+    Write-Host "1) Enumerate domain users in Active Directory"
+    Write-Host "2) Delete a specific domain user and their profile"
+    Write-Host "3) Delete a domain user from Active Directory"
+    Write-Host "4) Clean Sweep: Delete domain user and their profile"
+    Write-Host "5) Delete all domain user accounts except Administrator and reset Administrator password"
+    Write-Host "6) Exit"
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        1 { Enumerate-DomainUsers }
+        2 { Delete-DomainUser }
+        3 { Delete-DomainUserFromAD }
+        4 { CleanSweep-DomainUser }
+        5 { Delete-AllDomainUsersExceptAdmin }
+        6 { Write-Host "Exiting script."; break }
+        default { Write-Host "Invalid selection. Please choose a valid option." }
+    }
+} while ($choice -ne 6)

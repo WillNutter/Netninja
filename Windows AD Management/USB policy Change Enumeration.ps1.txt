@@ -1,0 +1,94 @@
+# PowerShell script to manage USB access on a domain machine
+
+# Function to disable USB access for all users except Administrators, Domain Administrators, and Helpdesk personnel
+function Disable-USBAccess {
+    Write-Host "Disabling USB access for all users except Administrators, Domain Administrators, and Helpdesk personnel..."
+
+    # Create registry key to disable USB storage devices
+    $key = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\RemovableStorageDevices"
+    $value = "Deny_All"
+    
+    # Ensure the registry key exists
+    if (-not (Test-Path $key)) {
+        New-Item -Path $key -Force
+    }
+
+    # Set the value to disable USB devices
+    Set-ItemProperty -Path $key -Name $value -Value 1
+
+    Write-Host "USB access has been disabled for all users except Administrators, Domain Administrators, and Helpdesk personnel."
+}
+
+# Function to enable USB access for all users
+function Enable-USBAccess {
+    Write-Host "Enabling USB access for all users..."
+
+    # Remove the registry key to allow USB access for everyone
+    $key = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\RemovableStorageDevices"
+    
+    # Check if the registry key exists before attempting to remove it
+    if (Test-Path $key) {
+        Remove-Item -Path $key -Recurse -Force
+        Write-Host "USB access has been enabled for all users."
+    } else {
+        Write-Host "USB access is already enabled for everyone."
+    }
+}
+
+# Function to enumerate USB access status on the machine
+function Get-USBAccessStatus {
+    Write-Host "Enumerating USB access status..."
+
+    # Check if the registry key for USB access restrictions exists
+    $key = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\RemovableStorageDevices"
+
+    if (Test-Path $key) {
+        $usbStatus = Get-ItemProperty -Path $key -Name "Deny_All" -ErrorAction SilentlyContinue
+        if ($usbStatus) {
+            if ($usbStatus.Deny_All -eq 1) {
+                Write-Host "USB access is restricted for all users except Administrators, Domain Administrators, and Helpdesk personnel."
+            }
+        } else {
+            Write-Host "USB access is allowed for all users."
+        }
+    } else {
+        Write-Host "USB access is allowed for all users."
+    }
+}
+
+# Main script execution
+do {
+    Write-Host "`nSelect an action to perform:
+    1) Disable USB access for all users except Administrators, Domain Administrators, and Helpdesk personnel
+    2) Enable USB access for all users
+    3) Enumerate USB access status
+    4) Exit"
+
+    $action = Read-Host "Enter a number"
+
+    switch ($action) {
+        1 {
+            # Disable USB access for all users except specified roles
+            Disable-USBAccess
+            break
+        }
+        2 {
+            # Enable USB access for all users
+            Enable-USBAccess
+            break
+        }
+        3 {
+            # Enumerate USB access status
+            Get-USBAccessStatus
+            break
+        }
+        4 {
+            # Exit the script
+            Write-Host "Exiting script."
+            break
+        }
+        default {
+            Write-Host "Invalid selection. Please choose a valid option."
+        }
+    }
+} while ($action -ne 4)

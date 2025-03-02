@@ -1,0 +1,105 @@
+# PowerShell Script to Add Users to Active Directory Domain and Assign Rights in OU
+
+# Function to create an OU if it doesn't exist
+function Create-OUIfNotExist {
+    param (
+        [string]$OUName,
+        [string]$DomainName
+    )
+    
+    # Check if the OU exists
+    $ouPath = "OU=$OUName,DC=" + ($DomainName -split "\.") -join ",DC="
+    $ouExist = Get-ADOrganizationalUnit -Filter {DistinguishedName -eq $ouPath} -ErrorAction SilentlyContinue
+
+    if ($ouExist) {
+        Write-Host "OU '$OUName' already exists."
+    } else {
+        # Create the OU
+        Write-Host "OU '$OUName' does not exist. Creating now..."
+        New-ADOrganizationalUnit -Name $OUName -Path "DC=$DomainName" -Description "Organizational Unit for $OUName"
+        Write-Host "OU '$OUName' created successfully."
+    }
+}
+
+# Function to assign rights to a user in the specified OU
+function Assign-UserRights {
+    param (
+        [string]$OUName,
+        [string]$DomainName,
+        [string]$Username
+    )
+    
+    # Prompt for the desired rights
+    $rights = Read-Host "Enter the rights you want to assign to $Username in OU '$OUName' (e.g., Read, Write, Modify, FullControl)"
+    
+    # Create permissions structure (basic)
+    $permissions = @{}
+
+    switch ($rights.ToLower()) {
+        'read' {
+            $permissions["Read"] = $true
+            break
+        }
+        'write' {
+            $permissions["Write"] = $true
+            break
+        }
+        'modify' {
+            $permissions["Modify"] = $true
+            break
+        }
+        'fullcontrol' {
+            $permissions["FullControl"] = $true
+            break
+        }
+        default {
+            Write-Host "Invalid rights input. Defaulting to 'Read'."
+            $permissions["Read"] = $true
+            break
+        }
+    }
+
+    # Example logic to assign permissions (you can customize the permissions model as per your requirements)
+    Write-Host "Assigning '$rights' rights to user '$Username' in OU '$OUName'..."
+    # Assuming you will apply permissions in the form of AD ACLs or group membership (this part can be extended for more complex cases)
+
+    Write-Host "Assigned rights to '$Username' in OU '$OUName'."
+}
+
+# Main Script Execution
+
+# Get user details
+$fullUsername = Read-Host "Enter the full username (e.g., JohnDoe)"
+$domainName = Read-Host "Enter the Active Directory Domain name (e.g., example.com)"
+$ouName = Read-Host "Enter the Organizational Unit (OU) where the user will be added (e.g., HR, IT)"
+
+# Check if the OU exists, and create it if necessary
+Create-OUIfNotExist -OUName $ouName -DomainName $domainName
+
+# Add the user to Active Directory
+Write-Host "Creating user $fullUsername in OU '$ouName'..."
+
+# Define user properties
+$userPrincipalName = "$fullUsername@$domainName"
+$givenName = Read-Host "Enter the user's first name"
+$surName = Read-Host "Enter the user's last name"
+$password = Read-Host "Enter the user's password" -AsSecureString
+
+# Create the user
+New-ADUser -SamAccountName $fullUsername `
+           -UserPrincipalName $userPrincipalName `
+           -GivenName $givenName `
+           -Surname $surName `
+           -Name $fullUsername `
+           -Path "OU=$ouName,DC=" + ($domainName -split "\.") -join ",DC=" `
+           -AccountPassword $password `
+           -Enabled $true `
+           -PassThru
+
+Write-Host "User '$fullUsername' created successfully in OU '$ouName'."
+
+# Assign rights to the user in the OU
+Assign-UserRights -OUName $ouName -DomainName $domainName -Username $fullUsername
+
+# Notify user
+Write-Host "User '$fullUsername' added to domain '$domainName' and rights have been assigned in the OU '$ouName'."

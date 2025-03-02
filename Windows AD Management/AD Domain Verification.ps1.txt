@@ -1,0 +1,5 @@
+# Verify the domain controller installation
+Get-ADDomainController
+
+# Check the domain name
+Get-ADDomain

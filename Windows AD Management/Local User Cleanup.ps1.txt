@@ -1,0 +1,121 @@
+# PowerShell script to manage local user accounts and directories
+
+# Function to enumerate local users on the machine
+function Enumerate-LocalUsers {
+    $localUsers = Get-LocalUser
+    Write-Host "`nLocal Users on the machine:"
+    $localUsers | Select-Object Name, Enabled | Format-Table -AutoSize
+}
+
+# Function to delete a specific local user and its directories
+function Delete-LocalUser {
+    $username = Read-Host "Enter the username to delete"
+    
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to delete the user $username? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Delete the local user account
+        Remove-LocalUser -Name $username
+        Write-Host "$username has been deleted from the system."
+        
+        # Delete the user's profile directory (if it exists)
+        $userProfilePath = "C:\Users\$username"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $username has been deleted."
+        }
+    } else {
+        Write-Host "Operation cancelled. User $username was not deleted."
+    }
+}
+
+# Function to delete a local user from the SAM file (this will remove the user from the system entirely)
+function Delete-LocalUserFromSAM {
+    $username = Read-Host "Enter the username to delete from the SAM file"
+    
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to delete the user $username from the SAM file? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Remove the local user from the SAM file
+        Remove-LocalUser -Name $username
+        Write-Host "$username has been removed from the SAM file."
+    } else {
+        Write-Host "Operation cancelled. User $username was not removed from the SAM file."
+    }
+}
+
+# Function for Clean Sweep: delete local user and its directories
+function CleanSweep-LocalUser {
+    $username = Read-Host "Enter the username for a Clean Sweep"
+    
+    # Confirm the deletion
+    $confirm = Read-Host "Are you sure you want to perform a Clean Sweep for $username? (Y/N)"
+    if ($confirm -eq "Y") {
+        # Delete the local user account
+        Remove-LocalUser -Name $username
+        Write-Host "$username has been deleted from the system."
+        
+        # Delete the user's profile directory (if it exists)
+        $userProfilePath = "C:\Users\$username"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $username has been deleted."
+        }
+        
+        # Remove the user from the SAM file
+        Write-Host "$username has been removed from the SAM file."
+    } else {
+        Write-Host "Operation cancelled. No changes were made."
+    }
+}
+
+# Function to delete all local users except Administrator and reset Administrator password
+function Delete-AllLocalUsersExceptAdmin {
+    $localUsers = Get-LocalUser
+    $adminUser = "Administrator"
+    
+    # Get a list of all local users except Administrator
+    $usersToDelete = $localUsers | Where-Object { $_.Name -ne $adminUser }
+    
+    foreach ($user in $usersToDelete) {
+        # Delete the user account
+        Remove-LocalUser -Name $user.Name
+        Write-Host "User $($user.Name) has been deleted."
+        
+        # Delete the user's profile directory (if it exists)
+        $userProfilePath = "C:\Users\$($user.Name)"
+        if (Test-Path $userProfilePath) {
+            Remove-Item -Path $userProfilePath -Recurse -Force
+            Write-Host "The user profile directory for $($user.Name) has been deleted."
+        }
+    }
+    
+    # Reset the Administrator account's password to "password" and require a password change at next login
+    $admin = Get-LocalUser -Name $adminUser
+    Set-LocalUser -Name $adminUser -Password (ConvertTo-SecureString "password" -AsPlainText -Force)
+    Set-LocalUser -Name $adminUser -UserMustChangePasswordAtNextLogon $true
+    Write-Host "`nThe Administrator account's password has been reset to 'password' and must be changed at the next login."
+}
+
+# Main menu loop
+do {
+    Write-Host "`nLocal User Management Menu"
+    Write-Host "1) Enumerate the local users on the machine"
+    Write-Host "2) Delete a specific local user account and its user directories"
+    Write-Host "3) Delete the specific local user from the SAM file"
+    Write-Host "4) Clean Sweep: Delete the local user and its directories"
+    Write-Host "5) Delete all local user accounts except Administrator and reset Administrator password"
+    Write-Host "6) Exit"
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        1 { Enumerate-LocalUsers }
+        2 { Delete-LocalUser }
+        3 { Delete-LocalUserFromSAM }
+        4 { CleanSweep-LocalUser }
+        5 { Delete-AllLocalUsersExceptAdmin }
+        6 { Write-Host "Exiting script."; break }
+        default { Write-Host "Invalid selection. Please choose a valid option." }
+    }
+} while ($choice -ne 6)

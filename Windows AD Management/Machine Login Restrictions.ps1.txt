@@ -1,0 +1,90 @@
+# Import the required Active Directory module
+Import-Module ActiveDirectory
+
+# Function to check if the user is part of the allowed groups (Domain Admins, Administrators, IT)
+function Is-UserAuthorized {
+    param (
+        [string]$username
+    )
+
+    $groups = Get-ADUser $username -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+    $allowedGroups = @(
+        "CN=Domain Admins,CN=Users,DC=yourdomain,DC=com",  # Replace with your domain's DN
+        "CN=Administrators,CN=Builtin,DC=yourdomain,DC=com",
+        "CN=IT,OU=Groups,DC=yourdomain,DC=com"           # Replace with your IT group DN
+    )
+
+    # Check if the user is part of one of the allowed groups
+    return ($groups | Where-Object { $_ -in $allowedGroups }).Count -gt 0
+}
+
+# Function to restrict login to a machine based on user OU
+function Restrict-UserLogin {
+    param (
+        [string]$username,
+        [string]$machineName
+    )
+
+    $user = Get-ADUser $username -Properties DistinguishedName
+    $userOU = ($user.DistinguishedName -split ",", 2)[1]  # Get OU part of the DN
+
+    $machine = Get-ADComputer $machineName -Properties DistinguishedName
+    $machineOU = ($machine.DistinguishedName -split ",", 2)[1]  # Get OU part of the DN
+
+    if ($userOU -ne $machineOU -and !(Is-UserAuthorized -username $username)) {
+        Write-Host "Access denied for user $username on machine $machineName. User is not in the same OU."
+    } else {
+        Write-Host "User $username is allowed to log in to machine $machineName."
+    }
+}
+
+# Function to remove login restriction on all machines
+function Remove-AllRestrictions {
+    Write-Host "Removing login restrictions from all machines..."
+    # Example: Remove all group policy settings or security settings that were added to restrict logins
+    # This can involve resetting security policies, group policies, or any related settings.
+}
+
+# Function to remove login restriction on a specific machine
+function Remove-MachineRestriction {
+    param (
+        [string]$machineName
+    )
+
+    Write-Host "Removing login restriction on machine $machineName..."
+    # Example: Remove specific restrictions on a particular machine. 
+    # This can involve removing group policies, user rights assignments, etc.
+}
+
+# Main Menu for user interaction
+do {
+    Write-Host "`nMachine Login Restriction Menu"
+    Write-Host "1) Restrict user login to specific machines based on OU"
+    Write-Host "2) Remove all login restrictions on all machines"
+    Write-Host "3) Remove login restriction on a specific machine"
+    Write-Host "4) Exit"
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        1 {
+            $username = Read-Host "Enter the username to restrict"
+            $machineName = Read-Host "Enter the machine name to check"
+            Restrict-UserLogin -username $username -machineName $machineName
+        }
+        2 {
+            Remove-AllRestrictions
+        }
+        3 {
+            $machineName = Read-Host "Enter the machine name to remove restriction from"
+            Remove-MachineRestriction -machineName $machineName
+        }
+        4 {
+            Write-Host "Exiting script."
+            break
+        }
+        default {
+            Write-Host "Invalid selection. Please choose a valid option."
+        }
+    }
+} while ($choice -ne 4)

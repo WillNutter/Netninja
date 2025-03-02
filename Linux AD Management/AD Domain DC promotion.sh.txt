@@ -1,0 +1,121 @@
+#chmod +x promote_to_ad.sh
+#sudo ./promote_to_ad.sh
+
+#!/bin/bash
+
+# Define variables
+DOMAIN_NAME="example.com"        # Replace with your domain name
+NETBIOS_NAME="EXAMPLE"           # Replace with your NetBIOS name (short domain name)
+ADMIN_PASSWORD="Password123!"    # Replace with your admin password
+HOSTNAME=$(hostname -s)          # Hostname of the server
+DC_SERVER="$HOSTNAME.$DOMAIN_NAME" # Fully Qualified Domain Name of this server
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Update the system
+echo "Updating system and installing necessary packages..."
+apt update && apt upgrade -y
+apt install -y samba samba-common-bin krb5-user bind9 bind9utils dnsutils acl
+
+# Configure Kerberos (KDC) client settings
+echo "Configuring Kerberos..."
+cat > /etc/krb5.conf <<EOL
+[libdefaults]
+    default_realm = $DOMAIN_NAME
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    $DOMAIN_NAME = {
+        kdc = $DC_SERVER
+        admin_server = $DC_SERVER
+    }
+
+[domain_realm]
+    .$DOMAIN_NAME = $DOMAIN_NAME
+    $DOMAIN_NAME = $DOMAIN_NAME
+EOL
+
+# Configure Samba for AD Domain Controller
+echo "Configuring Samba as Active Directory Domain Controller..."
+samba-tool domain provision \
+  --realm=$DOMAIN_NAME \
+  --domain=$NETBIOS_NAME \
+  --adminpass=$ADMIN_PASSWORD \
+  --server-role=dc \
+  --dns-backend=BIND9_DLZ \
+  --host-name=$HOSTNAME \
+  --host-ip=$(hostname -I | awk '{print $1}')
+
+# Set hostname for the server to match the domain
+echo "Setting hostname to match the domain..."
+hostnamectl set-hostname $DC_SERVER
+
+# Enable and start Samba services
+echo "Enabling and starting Samba services..."
+systemctl enable samba-ad-dc
+systemctl start samba-ad-dc
+systemctl enable smbd
+systemctl start smbd
+systemctl enable nmbd
+systemctl start nmbd
+
+# Configure DNS (BIND9) for Active Directory
+echo "Configuring DNS (BIND9) for Active Directory..."
+cat > /etc/bind/named.conf.options <<EOL
+options {
+    directory "/var/cache/bind";
+    recursion yes;
+    allow-query { any; };
+    listen-on { any; };
+    listen-on-v6 { any; };
+    forwarders {
+        8.8.8.8;
+        8.8.4.4;
+    };
+    auth-nxdomain no;    # conform to RFC1035
+};
+EOL
+
+cat > /etc/bind/named.conf.local <<EOL
+zone "$DOMAIN_NAME" {
+    type master;
+    file "/var/lib/samba/bind-dns/$DOMAIN_NAME.zone";
+};
+EOL
+
+# Restart BIND9 to apply changes
+echo "Restarting BIND9 service..."
+systemctl restart bind9
+
+# Set Samba to start on boot
+echo "Ensuring Samba services start on boot..."
+systemctl enable samba-ad-dc
+systemctl enable smbd
+systemctl enable nmbd
+
+# Check the Samba AD Domain Controller Status
+echo "Verifying Samba AD Domain Controller..."
+samba-tool domain level show
+
+# Verify DNS resolution
+echo "Verifying DNS resolution..."
+dig @$DC_SERVER $DOMAIN_NAME
+
+# Test Kerberos Authentication
+echo "Testing Kerberos authentication..."
+kinit administrator@$DOMAIN_NAME
+if [ $? -eq 0 ]; then
+    echo "Kerberos authentication successful."
+else
+    echo "Kerberos authentication failed!"
+    exit 1
+fi
+
+echo "Linux server successfully promoted to AD Domain Controller."
+echo "You can now join other machines to the domain using the domain credentials."
+

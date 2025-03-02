@@ -1,0 +1,80 @@
+#chmod +x verify_ad.sh
+#sudo ./verify_ad.sh
+
+#!/bin/bash
+
+# Define the domain and domain controller server name
+DOMAIN_NAME="example.com"   # Replace with your domain name
+DC_SERVER="localhost"       # Or the actual domain controller's IP address/hostname
+ADMIN_USER="administrator"  # The username for domain authentication
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Check Samba AD Domain Controller Status
+echo "Checking Samba AD Domain Controller status..."
+samba_status=$(systemctl is-active samba-ad-dc)
+
+if [ "$samba_status" != "active" ]; then
+    echo "Samba AD Domain Controller is NOT running! Please check the logs."
+    exit 1
+else
+    echo "Samba AD Domain Controller is running."
+fi
+
+# Verify Kerberos Authentication
+echo "Verifying Kerberos authentication..."
+kinit $ADMIN_USER@$DOMAIN_NAME
+if [ $? -eq 0 ]; then
+    echo "Kerberos authentication successful."
+else
+    echo "Kerberos authentication failed! Please check your configuration."
+    exit 1
+fi
+
+# Check DNS Resolution for the AD domain
+echo "Checking DNS resolution for $DOMAIN_NAME..."
+dns_query=$(dig @$DC_SERVER $DOMAIN_NAME)
+if echo "$dns_query" | grep -q "ANSWER SECTION"; then
+    echo "DNS resolution is working for $DOMAIN_NAME."
+else
+    echo "DNS resolution for $DOMAIN_NAME failed! Please check your DNS configuration."
+    exit 1
+fi
+
+# Check if the domain controller is reachable via the network
+echo "Checking if domain controller $DC_SERVER is reachable..."
+ping -c 4 $DC_SERVER > /dev/null
+if [ $? -eq 0 ]; then
+    echo "Domain Controller $DC_SERVER is reachable."
+else
+    echo "Domain Controller $DC_SERVER is NOT reachable! Please check network connectivity."
+    exit 1
+fi
+
+# Test Domain Health with samba-tool
+echo "Testing domain health with samba-tool..."
+samba-tool domain level show
+if [ $? -eq 0 ]; then
+    echo "Domain health check passed."
+else
+    echo "Domain health check failed! Please review Samba logs for errors."
+    exit 1
+fi
+
+# Test AD user creation (Optional, for deeper verification)
+echo "Attempting to create a test user in AD..."
+samba-tool user create testuser TestPassword123! --given-name="Test" --surname="User" --home-drive="Z:" --home-directory="/home/testuser"
+if [ $? -eq 0 ]; then
+    echo "Test user created successfully in Active Directory."
+    samba-tool user delete testuser
+    echo "Test user deleted successfully."
+else
+    echo "Failed to create test user in Active Directory."
+    exit 1
+fi
+
+echo "Active Directory verification completed successfully!"

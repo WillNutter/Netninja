@@ -1,0 +1,93 @@
+#chmod +x manage_firewalls.sh
+#sudo ./manage_firewalls.sh
+
+
+#!/bin/bash
+
+# Define domain name and admin credentials
+DOMAIN_NAME="example.com"        # Replace with your domain name
+ADMIN_USER="administrator"       # The admin user for the domain
+ADMIN_PASSWORD="Password123!"    # The admin password for the domain
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to turn off the firewall for all machines in the AD domain
+turn_off_firewalls() {
+    echo "Turning off the firewall for all machines in the AD domain..."
+
+    # Get a list of machines in the AD domain
+    MACHINES=$(samba-tool computer list | awk '{print $1}')
+
+    for MACHINE in $MACHINES; do
+        echo "Turning off firewall on $MACHINE..."
+
+        # SSH into each machine and turn off the firewall
+        ssh "$ADMIN_USER@$MACHINE" "sudo ufw disable" &
+
+        if [ $? -eq 0 ]; then
+            echo "Firewall turned off on $MACHINE."
+        else
+            echo "Failed to turn off firewall on $MACHINE."
+        fi
+    done
+
+    # Wait for all background jobs to finish
+    wait
+    echo "All firewalls turned off."
+}
+
+# Function to turn on the firewall for all machines in the AD domain
+turn_on_firewalls() {
+    echo "Turning on the firewall for all machines in the AD domain..."
+
+    # Get a list of machines in the AD domain
+    MACHINES=$(samba-tool computer list | awk '{print $1}')
+
+    for MACHINE in $MACHINES; do
+        echo "Turning on firewall on $MACHINE..."
+
+        # SSH into each machine and turn on the firewall
+        ssh "$ADMIN_USER@$MACHINE" "sudo ufw enable" &
+
+        if [ $? -eq 0 ]; then
+            echo "Firewall turned on for $MACHINE."
+        else
+            echo "Failed to turn on firewall for $MACHINE."
+        fi
+    done
+
+    # Wait for all background jobs to finish
+    wait
+    echo "All firewalls turned on."
+}
+
+# Main menu
+while true; do
+    echo "Please select an option:"
+    echo "1) Turn off firewalls for all machines in the AD domain"
+    echo "2) Turn on firewalls for all machines in the AD domain"
+    echo "3) Exit"
+
+    read -p "Enter your choice (1-3): " choice
+
+    case $choice in
+        1)
+            turn_off_firewalls
+            ;;
+        2)
+            turn_on_firewalls
+            ;;
+        3)
+            echo "Exiting script."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+done

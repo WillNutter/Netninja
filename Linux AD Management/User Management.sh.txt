@@ -1,0 +1,170 @@
+#!/bin/bash
+
+# Define domain name and admin credentials
+DOMAIN_NAME="example.com"        # Replace with your domain name
+ADMIN_USER="administrator"       # The admin user for the domain
+ADMIN_PASSWORD="Password123!"    # The admin password for the domain
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to add a user to the local host
+add_local_user() {
+    echo "Please enter the username you want to add:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Adding local user: $USERNAME"
+    useradd -m -s /bin/bash "$USERNAME"
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME added successfully."
+    else
+        echo "Failed to add user $USERNAME."
+        exit 1
+    fi
+}
+
+# Function to delete a user from the local host and remove their home directory
+delete_local_user() {
+    echo "Please enter the username you want to delete:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Deleting local user: $USERNAME and their home directory"
+    userdel -r "$USERNAME"
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME deleted successfully, along with their home directory."
+    else
+        echo "Failed to delete user $USERNAME."
+        exit 1
+    fi
+}
+
+# Function to add a user to the AD domain and optionally create a home directory
+add_ad_user() {
+    echo "Please enter the username you want to add to the AD domain:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Please enter the user's password:"
+    read -s -p "Password: " PASSWORD
+    echo
+
+    # Add user to AD domain using samba-tool
+    samba-tool user add "$USERNAME" "$PASSWORD" --given-name="$USERNAME" --surname="User"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME added to AD domain successfully."
+
+        # Option to create a home directory for the user on this machine
+        read -p "Do you want to create a home directory for $USERNAME on this machine? (y/n): " CREATE_HOME
+
+        if [[ "$CREATE_HOME" == "y" || "$CREATE_HOME" == "Y" ]]; then
+            mkdir -p /home/$USERNAME
+            chown $USERNAME:$USERNAME /home/$USERNAME
+            echo "Home directory created for $USERNAME at /home/$USERNAME."
+        fi
+    else
+        echo "Failed to add user $USERNAME to AD domain."
+        exit 1
+    fi
+}
+
+# Function to delete a user from the AD domain and optionally remove their home directory
+delete_ad_user() {
+    echo "Please enter the username you want to delete from the AD domain:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    # Delete user from AD domain using samba-tool
+    samba-tool user delete "$USERNAME"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME deleted from AD domain successfully."
+
+        # Option to remove their home directory from this machine
+        read -p "Do you want to delete the home directory for $USERNAME on this machine? (y/n): " DELETE_HOME
+
+        if [[ "$DELETE_HOME" == "y" || "$DELETE_HOME" == "Y" ]]; then
+            rm -rf /home/$USERNAME
+            echo "Home directory for $USERNAME deleted from this machine."
+        fi
+    else
+        echo "Failed to delete user $USERNAME from AD domain."
+        exit 1
+    fi
+}
+
+# Function to enumerate all local users
+enumerate_local_users() {
+    echo "Enumerating local users..."
+    cut -d: -f1 /etc/passwd
+}
+
+# Function to enumerate all AD users
+enumerate_ad_users() {
+    echo "Enumerating AD users..."
+    samba-tool user list
+}
+
+# Main menu
+while true; do
+    echo "Please select an option:"
+    echo "1) Add a user to the local host"
+    echo "2) Delete a user from the local host and their home directory"
+    echo "3) Add a user to the AD domain"
+    echo "4) Delete a user from the AD domain and their home directory"
+    echo "5) Enumerate the local users"
+    echo "6) Enumerate the AD domain users"
+    echo "7) Exit"
+
+    read -p "Enter your choice (1-7): " choice
+
+    case $choice in
+        1)
+            add_local_user
+            ;;
+        2)
+            delete_local_user
+            ;;
+        3)
+            add_ad_user
+            ;;
+        4)
+            delete_ad_user
+            ;;
+        5)
+            enumerate_local_users
+            ;;
+        6)
+            enumerate_ad_users
+            ;;
+        7)
+            echo "Exiting script."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+done

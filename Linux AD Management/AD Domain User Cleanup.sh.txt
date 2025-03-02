@@ -1,0 +1,265 @@
+#chmod +x manage_ad_domain.sh
+#sudo ./manage_ad_domain.sh
+
+#!/bin/bash
+
+# Ensure script is being run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Define default domain and DC information
+DOMAIN_NAME="example.com"         # Replace with your domain name
+DC_NAME="dc.example.com"           # Replace with your domain controller name
+ADMIN_USER="administrator"         # AD admin user
+ADMIN_PASSWORD="Password123!"      # Admin password (change it to match your environment)
+
+# Function to create an AD domain
+create_ad_domain() {
+    echo "Creating AD Domain..."
+    
+    # Create the AD domain using samba-tool
+    samba-tool domain provision --realm="$DOMAIN_NAME" --domain="${DOMAIN_NAME%%.*}" --adminpass="$ADMIN_PASSWORD" --server-role=dc --dns-backend=SAMBA_INTERNAL
+
+    if [ $? -eq 0 ]; then
+        echo "AD Domain $DOMAIN_NAME created successfully."
+    else
+        echo "Failed to create the AD Domain."
+    fi
+}
+
+# Function to delete an entire AD domain
+delete_ad_domain() {
+    echo "Deleting AD Domain..."
+    
+    # Unjoin the domain and remove Samba AD-related files
+    samba-tool domain demote --password="$ADMIN_PASSWORD"
+
+    if [ $? -eq 0 ]; then
+        echo "AD Domain deleted successfully."
+    else
+        echo "Failed to delete the AD Domain."
+    fi
+}
+
+# Function to add an Organizational Unit (OU)
+add_ou() {
+    echo "Enter the name of the OU to add:"
+    read -p "OU Name: " OU_NAME
+
+    if [ -z "$OU_NAME" ]; then
+        echo "OU name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Adding OU $OU_NAME..."
+    
+    # Add the OU using samba-tool
+    samba-tool ou add "OU=$OU_NAME,DC=${DOMAIN_NAME%%.*},DC=${DOMAIN_NAME##*.}"
+
+    if [ $? -eq 0 ]; then
+        echo "OU $OU_NAME added successfully."
+    else
+        echo "Failed to add OU $OU_NAME."
+    fi
+}
+
+# Function to delete an entire OU from the domain
+delete_ou() {
+    echo "Enter the name of the OU to delete:"
+    read -p "OU Name: " OU_NAME
+
+    if [ -z "$OU_NAME" ]; then
+        echo "OU name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Deleting OU $OU_NAME..."
+    
+    # Delete the OU using samba-tool
+    samba-tool ou delete "OU=$OU_NAME,DC=${DOMAIN_NAME%%.*},DC=${DOMAIN_NAME##*.}"
+
+    if [ $? -eq 0 ]; then
+        echo "OU $OU_NAME deleted successfully."
+    else
+        echo "Failed to delete OU $OU_NAME."
+    fi
+}
+
+# Function to add a user to the AD Domain and a specific OU
+add_user() {
+    echo "Enter the username to add:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Enter the OU where the user should be added:"
+    read -p "OU Name: " OU_NAME
+
+    if [ -z "$OU_NAME" ]; then
+        echo "OU name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Enter the password for the new user:"
+    read -s -p "Password: " PASSWORD
+    echo ""
+
+    echo "Adding user $USERNAME to OU $OU_NAME..."
+    
+    # Add the user to the specified OU in the domain
+    samba-tool user add "$USERNAME" "$PASSWORD" --given-name="$USERNAME" --surname="User" --user-ou="OU=$OU_NAME,DC=${DOMAIN_NAME%%.*},DC=${DOMAIN_NAME##*.}"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME added successfully."
+    else
+        echo "Failed to add user $USERNAME."
+    fi
+}
+
+# Function to delete a user from the AD Domain and OU
+delete_user() {
+    echo "Enter the username to delete:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Deleting user $USERNAME..."
+
+    # Delete the user from the domain
+    samba-tool user delete "$USERNAME"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME deleted successfully."
+    else
+        echo "Failed to delete user $USERNAME."
+    fi
+}
+
+# Function to list domain permissions for a user
+list_permissions() {
+    echo "Enter the username to list permissions:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Listing permissions for $USERNAME..."
+    
+    # List all permissions for the user (replace with your domain's tool if needed)
+    samba-tool user show "$USERNAME" --show-details
+    
+    if [ $? -eq 0 ]; then
+        echo "Listed permissions for $USERNAME."
+    else
+        echo "Failed to list permissions."
+    fi
+}
+
+# Function to delete specific domain permissions for a user
+delete_permissions() {
+    list_permissions
+
+    echo "Enter the permission to delete (or type 'none' to skip):"
+    read -p "Permission: " PERMISSION
+
+    if [ "$PERMISSION" != "none" ]; then
+        # Code to delete the specific permission goes here (modify per your actual permissions model)
+        echo "Deleting permission $PERMISSION for user $USERNAME..."
+        # Sample samba-tool command (if implemented in your environment)
+        # samba-tool acl delete "CN=$USERNAME,OU=Users,DC=${DOMAIN_NAME%%.*},DC=${DOMAIN_NAME##*.}" "$PERMISSION"
+        echo "Permission $PERMISSION deleted."
+    else
+        echo "No permission deleted."
+    fi
+}
+
+# Function to add specific domain permissions to a user
+add_permissions() {
+    echo "Enter the username to add permissions to:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Listing available permissions for $USERNAME..."
+
+    # This is a placeholder for the actual permissions list. Modify per your permissions model.
+    echo "Available permissions: Read, Write, Modify"
+
+    echo "Enter the permission to add:"
+    read -p "Permission: " PERMISSION
+
+    if [ -z "$PERMISSION" ]; then
+        echo "No permission entered. Exiting."
+        exit 1
+    fi
+
+    echo "Adding permission $PERMISSION to $USERNAME..."
+    # Code to add the permission goes here
+    # samba-tool acl add "CN=$USERNAME,OU=Users,DC=${DOMAIN_NAME%%.*},DC=${DOMAIN_NAME##*.}" "$PERMISSION"
+
+    echo "Permission $PERMISSION added to $USERNAME."
+}
+
+# Function to enumerate the AD Domain, OUs, and users
+enumerate_ad() {
+    echo "Enumerating AD Domain, OUs, and users..."
+    
+    # List the OUs in the domain
+    samba-tool ou list
+    
+    # List users in the domain
+    samba-tool user list
+    
+    # List the users in each OU
+    echo "Enumerating users within each OU..."
+    OUS=$(samba-tool ou list)
+    
+    for OU in $OUS; do
+        echo "Users in OU $OU:"
+        samba-tool user list --ou="$OU"
+    done
+}
+
+# Main menu
+while true; do
+    echo "AD Domain Management Menu"
+    echo "1) Create AD Domain"
+    echo "2) Delete AD Domain"
+    echo "3) Add an OU"
+    echo "4) Delete an OU"
+    echo "5) Add a user to AD Domain and OU"
+    echo "6) Delete a user from AD Domain and OU"
+    echo "7) Delete specific domain permissions from a user"
+    echo "8) Add specific domain permissions to a user"
+    echo "9) Enumerate AD Domain, OUs, and users"
+    echo "10) Exit"
+    
+    read -p "Enter your choice (1-10): " choice
+    
+    case $choice in
+        1) create_ad_domain ;;
+        2) delete_ad_domain ;;
+        3) add_ou ;;
+        4) delete_ou ;;
+        5) add_user ;;
+        6) delete_user ;;
+        7) delete_permissions ;;
+        8) add_permissions ;;
+        9) enumerate_ad ;;
+        10) echo "Exiting script."; exit 0 ;;
+        *) echo "Invalid choice, please select a valid option." ;;
+    esac
+done

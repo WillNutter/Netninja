@@ -1,0 +1,136 @@
+#chmod +x manage_machines.sh
+#sudo ./manage_machines.sh
+
+#!/bin/bash
+
+# Define domain name and admin credentials
+DOMAIN_NAME="example.com"        # Replace with your domain name
+ADMIN_USER="administrator"       # The admin user for the domain
+ADMIN_PASSWORD="Password123!"    # The admin password for the domain
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to add a machine to the AD domain
+add_machine() {
+    echo "Please enter the machine name you want to add:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Do you want to add the machine to the general domain or a specific Organizational Unit (OU)?"
+    echo "1) General Domain"
+    echo "2) Specific OU"
+    read -p "Enter your choice (1 or 2): " domain_choice
+
+    if [ "$domain_choice" -eq 1 ]; then
+        echo "Adding machine $MACHINE_NAME to the general domain..."
+        samba-tool computer add "$MACHINE_NAME"
+    elif [ "$domain_choice" -eq 2 ]; then
+        echo "Please enter the OU where you want to add the machine (e.g., OU=Servers,DC=example,DC=com):"
+        read -p "OU DN: " OU_DN
+
+        if [ -z "$OU_DN" ]; then
+            echo "OU Distinguished Name (DN) cannot be empty. Exiting."
+            exit 1
+        fi
+
+        echo "Adding machine $MACHINE_NAME to the OU $OU_DN..."
+        samba-tool computer add "$MACHINE_NAME" --ou="$OU_DN"
+    else
+        echo "Invalid choice. Exiting."
+        exit 1
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "Machine $MACHINE_NAME added successfully."
+    else
+        echo "Failed to add machine $MACHINE_NAME."
+        exit 1
+    fi
+}
+
+# Function to delete a machine from the AD domain or OU
+delete_machine() {
+    echo "Please enter the machine name you want to delete:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Do you want to delete the machine from the general domain or a specific Organizational Unit (OU)?"
+    echo "1) General Domain"
+    echo "2) Specific OU"
+    read -p "Enter your choice (1 or 2): " domain_choice
+
+    if [ "$domain_choice" -eq 1 ]; then
+        echo "Deleting machine $MACHINE_NAME from the general domain..."
+        samba-tool computer delete "$MACHINE_NAME"
+    elif [ "$domain_choice" -eq 2 ]; then
+        echo "Deleting machine $MACHINE_NAME from the OU..."
+        samba-tool computer delete "$MACHINE_NAME"
+    else
+        echo "Invalid choice. Exiting."
+        exit 1
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "Machine $MACHINE_NAME deleted successfully."
+    else
+        echo "Failed to delete machine $MACHINE_NAME."
+        exit 1
+    fi
+}
+
+# Function to enumerate machines in the AD domain and the OUs they belong to
+enumerate_machines() {
+    echo "Enumerating machines in the AD domain and their associated OUs..."
+    samba-tool computer list | while read line; do
+        if [[ ! -z "$line" ]]; then
+            # Extract the computer's name from the list
+            MACHINE_NAME=$(echo $line | awk '{print $1}')
+            # Get the OU where the machine is located
+            OU_INFO=$(samba-tool computer show "$MACHINE_NAME" | grep "Distinguished Name")
+            echo "$MACHINE_NAME -> $OU_INFO"
+        fi
+    done
+}
+
+# Main menu
+while true; do
+    echo "Please select an option:"
+    echo "1) Add a machine to the AD Domain"
+    echo "2) Delete a machine from the AD Domain"
+    echo "3) Enumerate machines in the AD Domain and their OUs"
+    echo "4) Exit"
+
+    read -p "Enter your choice (1-4): " choice
+
+    case $choice in
+        1)
+            add_machine
+            ;;
+        2)
+            delete_machine
+            ;;
+        3)
+            enumerate_machines
+            ;;
+        4)
+            echo "Exiting script."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+done

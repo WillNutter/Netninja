@@ -1,0 +1,67 @@
+add_ad_user() {
+    echo "Please enter the username you want to add to the AD domain:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Please enter the user's password:"
+    read -s -p "Password: " PASSWORD
+    echo
+
+    # Ask where to add the user: AD domain, OU, or local
+    echo "Where would you like to add the user?"
+    echo "1) Add to general AD domain"
+    echo "2) Add to a specific OU in AD"
+    echo "3) Local account only (not added to AD)"
+    read -p "Select an option (1-3): " ADD_OPTION
+
+    case $ADD_OPTION in
+        1)  # Add to general AD domain
+            echo "Adding user $USERNAME to the general AD domain..."
+            samba-tool user add "$USERNAME" "$PASSWORD" --given-name="$USERNAME" --surname="User"
+            ;;
+        2)  # Add to a specific OU in AD
+            echo "Please enter the Distinguished Name (DN) of the OU (e.g., 'OU=Sales,DC=example,DC=com'):"
+            read -p "OU DN: " OU_DN
+            if [ -z "$OU_DN" ]; then
+                echo "OU DN cannot be empty. Exiting."
+                exit 1
+            fi
+            echo "Adding user $USERNAME to the OU: $OU_DN"
+            samba-tool user add "$USERNAME" "$PASSWORD" --given-name="$USERNAME" --surname="User" --ou="$OU_DN"
+            ;;
+        3)  # Local account only
+            echo "Adding user $USERNAME as a local user (not added to AD)."
+            useradd -m -s /bin/bash "$USERNAME"
+            if [ $? -eq 0 ]; then
+                echo "User $USERNAME added locally."
+            else
+                echo "Failed to add local user $USERNAME."
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME added successfully."
+
+        # Option to create a home directory for the user on this machine
+        read -p "Do you want to create a home directory for $USERNAME on this machine? (y/n): " CREATE_HOME
+
+        if [[ "$CREATE_HOME" == "y" || "$CREATE_HOME" == "Y" ]]; then
+            mkdir -p /home/$USERNAME
+            chown $USERNAME:$USERNAME /home/$USERNAME
+            echo "Home directory created for $USERNAME at /home/$USERNAME."
+        fi
+    else
+        echo "Failed to add user $USERNAME."
+        exit 1
+    fi
+}

@@ -1,0 +1,128 @@
+#chmod +x local_user_management.sh
+#sudo ./local_user_management.sh
+
+#!/bin/bash
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to enumerate local users on the machine
+enumerate_local_users() {
+    echo "Enumerating local users on the machine..."
+
+    # List local users by checking for UID > 1000 (non-system users)
+    getent passwd | awk -F: '{if ($3 >= 1000) print $1}'
+
+    echo "Enumeration complete."
+}
+
+# Function to delete a specific local user account and its user directories
+delete_local_user() {
+    echo "Please enter the username to delete:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Deleting local user $USERNAME and their home directory..."
+
+    # Delete the user and their home directory
+    userdel -r "$USERNAME"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME and their home directory have been deleted."
+    else
+        echo "Failed to delete user $USERNAME."
+    fi
+}
+
+# Function to perform a clean sweep: delete local user and its directories
+clean_sweep_user() {
+    echo "Please enter the username for Clean Sweep:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Performing Clean Sweep for $USERNAME..."
+
+    # Delete the user and all associated files
+    userdel -r "$USERNAME"
+
+    if [ $? -eq 0 ]; then
+        echo "User $USERNAME and all their directories have been deleted."
+    else
+        echo "Failed to delete user $USERNAME."
+    fi
+}
+
+# Function to delete all local users except Administrator and reset Administrator password
+delete_all_users_except_admin() {
+    echo "Deleting all local user accounts except Administrator..."
+
+    # Get a list of users except for 'Administrator'
+    USERS_TO_DELETE=$(getent passwd | awk -F: '{if ($3 >= 1000 && $1 != "administrator") print $1}')
+
+    for USER in $USERS_TO_DELETE; do
+        echo "Deleting user $USER and their home directory..."
+        userdel -r "$USER"
+    done
+
+    if [ $? -eq 0 ]; then
+        echo "All local users except Administrator have been deleted."
+    else
+        echo "Failed to delete some users."
+    fi
+
+    # Reset the Administrator password
+    echo "Resetting the Administrator password..."
+    echo "administrator:NewAdminPassword!" | chpasswd
+
+    if [ $? -eq 0 ]; then
+        echo "Administrator password has been reset."
+    else
+        echo "Failed to reset Administrator password."
+    fi
+}
+
+# Main menu
+while true; do
+    echo "Local User Management Menu"
+    echo "1) Enumerate the local users on the machine"
+    echo "2) Delete a specific local user account and its user directories"
+    echo "3) Clean Sweep: Delete the local user and its directories"
+    echo "4) Delete all local user accounts except Administrator and reset Administrator password"
+    echo "5) Exit"
+
+    read -p "Enter your choice (1-5): " choice
+
+    case $choice in
+        1)
+            enumerate_local_users
+            ;;
+        2)
+            delete_local_user
+            ;;
+        3)
+            clean_sweep_user
+            ;;
+        4)
+            delete_all_users_except_admin
+            ;;
+        5)
+            echo "Exiting script."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+done

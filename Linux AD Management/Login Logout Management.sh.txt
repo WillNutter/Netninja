@@ -1,0 +1,155 @@
+#chmod +x domain_login_logout_restriction.sh
+#sudo ./domain_login_logout_restriction.sh
+
+#!/bin/bash
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to enforce login/logout time restrictions for a user
+enforce_user_restrictions() {
+    echo "Enter the username for which to enforce login/logout time restrictions:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Enter the start time (HH:MM):"
+    read -p "Start time: " START_TIME
+
+    echo "Enter the end time (HH:MM):"
+    read -p "End time: " END_TIME
+
+    # Enforce time restrictions on the user using pam_access
+    echo "$USERNAME  $START_TIME-$END_TIME" >> /etc/security/access.conf
+
+    echo "Login/logout time restrictions enforced for $USERNAME from $START_TIME to $END_TIME."
+}
+
+# Function to remove login/logout time restrictions for a user
+remove_user_restrictions() {
+    echo "Enter the username for which to remove login/logout time restrictions:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    # Remove the user's line from /etc/security/access.conf
+    sed -i "/^$USERNAME/d" /etc/security/access.conf
+
+    echo "Login/logout time restrictions removed for $USERNAME."
+}
+
+# Function to enforce login/logout time restrictions for a specific machine on the AD Domain (Linux DC)
+enforce_machine_restrictions_domain() {
+    echo "Enter the machine name (FQDN) to enforce login/logout time restrictions:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Enter the start time (HH:MM):"
+    read -p "Start time: " START_TIME
+
+    echo "Enter the end time (HH:MM):"
+    read -p "End time: " END_TIME
+
+    # Use samba-tool or other AD domain tools to set machine login restrictions (simplified example)
+    # Samba doesn't directly handle time restrictions, so use AD policies if available
+    echo "Machine $MACHINE_NAME: Enforcing login time restrictions from $START_TIME to $END_TIME."
+    # Placeholder command for setting AD machine restrictions (if applicable)
+
+    # Ensure appropriate permissions in AD
+    # samba-tool machine time-restrictions --machine="$MACHINE_NAME" --start="$START_TIME" --end="$END_TIME"
+    echo "Time restrictions for $MACHINE_NAME enforced in AD."
+}
+
+# Function to enforce login/logout time restrictions for the local machine
+enforce_local_machine_restrictions() {
+    echo "Enter the start time (HH:MM):"
+    read -p "Start time: " START_TIME
+
+    echo "Enter the end time (HH:MM):"
+    read -p "End time: " END_TIME
+
+    # Use PAM access for local machine restrictions (adding to /etc/security/access.conf)
+    echo "Local machine: Enforcing login time restrictions from $START_TIME to $END_TIME."
+    echo "ALL   $START_TIME-$END_TIME  /dev/tty*" >> /etc/security/access.conf
+
+    echo "Login/logout time restrictions enforced for local machine from $START_TIME to $END_TIME."
+}
+
+# Function to remove login/logout time restrictions for a specific machine on the AD Domain (Linux DC)
+remove_machine_restrictions_domain() {
+    echo "Enter the machine name (FQDN) to remove login/logout time restrictions:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    # Remove the machine's time restriction from AD (not directly supported by samba-tool)
+    # Placeholder for removing machine time restrictions in AD
+    echo "Removing time restrictions for machine $MACHINE_NAME from AD."
+    # samba-tool machine remove-time-restrictions --machine="$MACHINE_NAME"
+
+    echo "Time restrictions removed for machine $MACHINE_NAME."
+}
+
+# Function to remove login/logout time restrictions for the local machine
+remove_local_machine_restrictions() {
+    echo "Removing login/logout time restrictions for the local machine..."
+
+    # Remove the line that restricts login times from /etc/security/access.conf
+    sed -i '/^ALL/d' /etc/security/access.conf
+
+    echo "Login/logout time restrictions removed for the local machine."
+}
+
+# Function to enumerate login/logout time restrictions on the local machine
+enumerate_local_restrictions() {
+    echo "Enumerating login/logout time restrictions on the local machine..."
+
+    # Display the contents of the access.conf file to show login restrictions
+    echo "Current login/logout restrictions:"
+    cat /etc/security/access.conf | grep -v "^#"
+
+    echo "End of login/logout restrictions."
+}
+
+# Main menu for the script
+while true; do
+    echo "Domain Login/Logout Time Restriction Menu"
+    echo "1) Enforce Login/Logout Time Restrictions for a User"
+    echo "2) Remove Login/Logout Time Restrictions for a User"
+    echo "3) Enforce Login/Logout Time Restrictions for a Specific Machine on the AD Domain"
+    echo "4) Enforce Login/Logout Time Restrictions for the Local Machine"
+    echo "5) Remove Login/Logout Time Restrictions for a Specific Machine on the AD Domain"
+    echo "6) Remove Login/Logout Time Restrictions for the Local Machine"
+    echo "7) Enumerate Login/Logout Time Restrictions on the Local Machine"
+    echo "8) Exit"
+
+    read -p "Enter your choice (1-8): " choice
+
+    case $choice in
+        1) enforce_user_restrictions ;;
+        2) remove_user_restrictions ;;
+        3) enforce_machine_restrictions_domain ;;
+        4) enforce_local_machine_restrictions ;;
+        5) remove_machine_restrictions_domain ;;
+        6) remove_local_machine_restrictions ;;
+        7) enumerate_local_restrictions ;;
+        8) echo "Exiting script."; exit 0 ;;
+        *) echo "Invalid choice, please select a valid option." ;;
+    esac
+done

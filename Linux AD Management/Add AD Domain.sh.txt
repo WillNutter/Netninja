@@ -1,0 +1,94 @@
+#chmod +x add_ad.sh
+#sudo ./add_ad.sh
+
+#!/bin/bash
+
+# Define variables
+DOMAIN_NAME="example.com"    # Replace with your domain name
+DOMAIN_NETBIOS="EXAMPLE"     # Replace with your NetBIOS name
+ADMIN_PASSWORD="Password123!" # Replace with your Admin password
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Update and install necessary packages
+echo "Updating package list and installing necessary packages..."
+apt update && apt upgrade -y
+apt install -y samba samba-common-bin krb5-user bind9 bind9utils dnsutils acl
+
+# Configure Kerberos (KDC) client settings
+echo "Configuring Kerberos..."
+cat > /etc/krb5.conf <<EOL
+[libdefaults]
+    default_realm = $DOMAIN_NAME
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    $DOMAIN_NAME = {
+        kdc = $DOMAIN_NAME
+        admin_server = $DOMAIN_NAME
+    }
+
+[domain_realm]
+    .$DOMAIN_NAME = $DOMAIN_NAME
+    $DOMAIN_NAME = $DOMAIN_NAME
+EOL
+
+# Configure Samba AD
+echo "Configuring Samba as Active Directory Domain Controller..."
+samba-tool domain provision --realm=$DOMAIN_NAME --domain=$DOMAIN_NETBIOS --adminpass=$ADMIN_PASSWORD --server-role=dc --dns-backend=BIND9_DLZ --host-name=$(hostname)
+
+# Enable Samba services
+echo "Enabling Samba and starting services..."
+systemctl enable samba-ad-dc
+systemctl start samba-ad-dc
+systemctl enable smbd
+systemctl start smbd
+systemctl enable nmbd
+systemctl start nmbd
+
+# Configure DNS (BIND9)
+echo "Configuring DNS with BIND9..."
+cat > /etc/bind/named.conf.options <<EOL
+options {
+    directory "/var/cache/bind";
+
+    recursion yes;
+    allow-query { any; };
+    listen-on { any; };
+    listen-on-v6 { any; };
+    forwarders {
+        8.8.8.8;
+        8.8.4.4;
+    };
+    auth-nxdomain no;    # conform to RFC1035
+    listen-on-v6 { any; };
+};
+EOL
+
+cat > /etc/bind/named.conf.local <<EOL
+zone "$DOMAIN_NAME" {
+    type master;
+    file "/var/lib/samba/bind-dns/$DOMAIN_NAME.zone";
+};
+EOL
+
+# Restart BIND9
+echo "Restarting BIND9 service..."
+systemctl restart bind9
+
+# Check Samba status
+echo "Verifying Samba Active Directory..."
+samba-tool domain level show
+
+# Verify Kerberos configuration
+echo "Verifying Kerberos authentication..."
+kinit administrator@$DOMAIN_NAME
+klist
+
+# Display success message
+echo "Active Directory Domain Services setup completed successfully!"

@@ -1,0 +1,227 @@
+#chmod +x manage_usb_policy.sh
+#sudo ./manage_usb_policy.sh
+
+
+#!/bin/bash
+
+# Define domain name and admin credentials
+DOMAIN_NAME="example.com"        # Replace with your domain name
+ADMIN_USER="administrator"       # The admin user for the domain
+ADMIN_PASSWORD="Password123!"    # The admin password for the domain
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to disable USB policy on all machines in the AD domain
+disable_usb_policy_all() {
+    echo "Disabling USB policy on all machines in the AD domain..."
+
+    MACHINES=$(samba-tool computer list | awk '{print $1}')
+
+    for MACHINE in $MACHINES; do
+        echo "Disabling USB policy on $MACHINE..."
+        ssh "$ADMIN_USER@$MACHINE" "sudo sh -c 'echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf'" &
+        
+        if [ $? -eq 0 ]; then
+            echo "USB policy disabled on $MACHINE."
+        else
+            echo "Failed to disable USB policy on $MACHINE."
+        fi
+    done
+
+    # Wait for all background jobs to finish
+    wait
+    echo "USB policy disabled on all machines."
+}
+
+# Function to enable USB policy on all machines in the AD domain
+enable_usb_policy_all() {
+    echo "Enabling USB policy on all machines in the AD domain..."
+
+    MACHINES=$(samba-tool computer list | awk '{print $1}')
+
+    for MACHINE in $MACHINES; do
+        echo "Enabling USB policy on $MACHINE..."
+        ssh "$ADMIN_USER@$MACHINE" "sudo rm -f /etc/modprobe.d/usb-storage.conf" &
+        
+        if [ $? -eq 0 ]; then
+            echo "USB policy enabled on $MACHINE."
+        else
+            echo "Failed to enable USB policy on $MACHINE."
+        fi
+    done
+
+    # Wait for all background jobs to finish
+    wait
+    echo "USB policy enabled on all machines."
+}
+
+# Function to disable USB policy on a specific machine
+disable_usb_policy_machine() {
+    echo "Please enter the machine name to disable USB policy:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Disabling USB policy on $MACHINE_NAME..."
+    ssh "$ADMIN_USER@$MACHINE_NAME" "sudo sh -c 'echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf'"
+
+    if [ $? -eq 0 ]; then
+        echo "USB policy disabled on $MACHINE_NAME."
+    else
+        echo "Failed to disable USB policy on $MACHINE_NAME."
+    fi
+}
+
+# Function to enable USB policy on a specific machine
+enable_usb_policy_machine() {
+    echo "Please enter the machine name to enable USB policy:"
+    read -p "Machine Name: " MACHINE_NAME
+
+    if [ -z "$MACHINE_NAME" ]; then
+        echo "Machine name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Enabling USB policy on $MACHINE_NAME..."
+    ssh "$ADMIN_USER@$MACHINE_NAME" "sudo rm -f /etc/modprobe.d/usb-storage.conf"
+
+    if [ $? -eq 0 ]; then
+        echo "USB policy enabled on $MACHINE_NAME."
+    else
+        echo "Failed to enable USB policy on $MACHINE_NAME."
+    fi
+}
+
+# Function to set USB device access for a specific account
+set_usb_access_account() {
+    echo "Please enter the username to set USB access:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Granting USB device access to $USERNAME..."
+
+    # Here, you could configure a specific USB access control policy for this user
+    # For now, let's assume we enable USB access by adding the user to a specific group
+
+    usermod -aG usb_access_group "$USERNAME"
+
+    if [ $? -eq 0 ]; then
+        echo "USB access granted to $USERNAME."
+    else
+        echo "Failed to grant USB access to $USERNAME."
+    fi
+}
+
+# Function to remove USB device access for a specific account
+remove_usb_access_account() {
+    echo "Please enter the username to remove USB access:"
+    read -p "Username: " USERNAME
+
+    if [ -z "$USERNAME" ]; then
+        echo "Username cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Removing USB device access from $USERNAME..."
+
+    # Remove the user from the group controlling USB access
+    gpasswd -d "$USERNAME" usb_access_group
+
+    if [ $? -eq 0 ]; then
+        echo "USB access removed from $USERNAME."
+    else
+        echo "Failed to remove USB access from $USERNAME."
+    fi
+}
+
+# Function to set USB access for all AD Domain and Local Administrators
+set_admin_usb_access() {
+    echo "Setting USB access for all AD Domain Administrators and Local Administrators..."
+
+    # Add AD Domain Admins and Local Administrators to the group with USB access
+    samba-tool group addmembers "Domain Admins" "usb_access_group"
+    gpasswd -a "Administrator" usb_access_group
+    gpasswd -a "root" usb_access_group
+
+    if [ $? -eq 0 ]; then
+        echo "USB access granted to all administrators."
+    else
+        echo "Failed to grant USB access to administrators."
+    fi
+}
+
+# Function to enumerate users/groups with USB access
+enumerate_usb_access() {
+    echo "Enumerating users with USB device access..."
+
+    # List users in the USB access group
+    getent group usb_access_group
+
+    if [ $? -eq 0 ]; then
+        echo "Listing users with USB access complete."
+    else
+        echo "Failed to list users with USB access."
+    fi
+}
+
+# Main menu
+while true; do
+    echo "Please select an option:"
+    echo "1) Disable USB policy on all machines in the AD Domain"
+    echo "2) Enable USB policy on all machines in the AD Domain"
+    echo "3) Disable USB policy on a specific machine"
+    echo "4) Enable USB policy on a specific machine"
+    echo "5) Set USB device access for a specific account"
+    echo "6) Remove USB device access for a specific account"
+    echo "7) Set USB access for all AD Domain and Local Administrators"
+    echo "8) Enumerate users/groups with USB access"
+    echo "9) Exit"
+
+    read -p "Enter your choice (1-9): " choice
+
+    case $choice in
+        1)
+            disable_usb_policy_all
+            ;;
+        2)
+            enable_usb_policy_all
+            ;;
+        3)
+            disable_usb_policy_machine
+            ;;
+        4)
+            enable_usb_policy_machine
+            ;;
+        5)
+            set_usb_access_account
+            ;;
+        6)
+            remove_usb_access_account
+            ;;
+        7)
+            set_admin_usb_access
+            ;;
+        8)
+            enumerate_usb_access
+            ;;
+        9)
+            echo "Exiting script."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            exit 1
+            ;;
+    esac
+done

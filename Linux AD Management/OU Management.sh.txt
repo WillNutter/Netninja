@@ -1,0 +1,99 @@
+#chmod +x manage_ou.sh
+#sudo ./manage_ou.sh
+
+#!/bin/bash
+
+# Define domain name and admin credentials
+DOMAIN_NAME="example.com"        # Replace with your domain name
+ADMIN_USER="administrator"       # The admin user for the domain
+ADMIN_PASSWORD="Password123!"    # The admin password for the domain
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use sudo."
+    exit 1
+fi
+
+# Function to add an OU to the AD domain
+add_ou() {
+    echo "Please enter the name of the Organizational Unit (OU) you want to add:"
+    read -p "OU Name: " OU_NAME
+
+    if [ -z "$OU_NAME" ]; then
+        echo "OU name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Creating Organizational Unit: $OU_NAME"
+    samba-tool domain ou create "OU=$OU_NAME,DC=$(echo $DOMAIN_NAME | cut -d '.' -f1),DC=$(echo $DOMAIN_NAME | cut -d '.' -f2)"
+
+    if [ $? -eq 0 ]; then
+        echo "Successfully created the Organizational Unit: $OU_NAME"
+    else
+        echo "Failed to create the Organizational Unit: $OU_NAME. Please check the logs for errors."
+        exit 1
+    fi
+}
+
+# Function to delete an OU from the AD domain
+delete_ou() {
+    echo "Please enter the name of the Organizational Unit (OU) you want to delete:"
+    read -p "OU Name: " OU_NAME
+
+    if [ -z "$OU_NAME" ]; then
+        echo "OU name cannot be empty. Exiting."
+        exit 1
+    fi
+
+    echo "Deleting Organizational Unit: $OU_NAME"
+    samba-tool domain ou delete "OU=$OU_NAME,DC=$(echo $DOMAIN_NAME | cut -d '.' -f1),DC=$(echo $DOMAIN_NAME | cut -d '.' -f2)"
+
+    if [ $? -eq 0 ]; then
+        echo "Successfully deleted the Organizational Unit: $OU_NAME"
+    else
+        echo "Failed to delete the Organizational Unit: $OU_NAME. Please check the logs for errors."
+        exit 1
+    fi
+}
+
+# Function to enumerate all OUs in the AD domain
+enumerate_ous() {
+    echo "Enumerating all Organizational Units in the domain..."
+    samba-tool domain ou list
+
+    if [ $? -eq 0 ]; then
+        echo "OUs enumeration completed successfully."
+    else
+        echo "Failed to enumerate Organizational Units. Please check the logs for errors."
+        exit 1
+    fi
+}
+
+# Main menu
+echo "Please select an option:"
+echo "1) Add an Organizational Unit (OU)"
+echo "2) Delete an Organizational Unit (OU)"
+echo "3) Enumerate all Organizational Units (OUs)"
+echo "4) Exit"
+
+read -p "Enter your choice (1/2/3/4): " choice
+
+case $choice in
+    1)
+        add_ou
+        ;;
+    2)
+        delete_ou
+        ;;
+    3)
+        enumerate_ous
+        ;;
+    4)
+        echo "Exiting script."
+        exit 0
+        ;;
+    *)
+        echo "Invalid choice. Exiting."
+        exit 1
+        ;;
+esac

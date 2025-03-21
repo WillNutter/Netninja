@@ -1,0 +1,15 @@
+public class SimpleCalculator {
+    public static double calculate(double a, double b, char op) {
+        switch (op) {
+            case '+': return a + b;
+            case '-': return a - b;
+            case '*': return a * b;
+            case '/': return (b != 0) ? a / b : Double.NaN;
+            default: return Double.NaN;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Result: " + calculate(5, 3, '*'));
+    }
+}

@@ -1,0 +1,11 @@
+public class PalindromeChecker {
+    public static boolean isPalindrome(String str) {
+        String reversed = new StringBuilder(str).reverse().toString();
+        return str.equalsIgnoreCase(reversed);
+    }
+
+    public static void main(String[] args) {
+        String input = "madam";
+        System.out.println(input + " is palindrome? " + isPalindrome(input));
+    }
+}

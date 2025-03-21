@@ -1,0 +1,55 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+class Book {
+    String title;
+    String author;
+    boolean isAvailable;
+
+    Book(String title, String author) {
+        this.title = title;
+        this.author = author;
+        this.isAvailable = true;
+    }
+
+    public String toString() {
+        return title + " by " + author + " - " + (isAvailable ? "Available" : "Checked Out");
+    }
+}
+
+public class Library {
+    static ArrayList<Book> books = new ArrayList<>();
+
+    public static void displayBooks() {
+        for (Book b : books) {
+            System.out.println(b);
+        }
+    }
+
+    public static void checkoutBook(String title) {
+        for (Book b : books) {
+            if (b.title.equalsIgnoreCase(title) && b.isAvailable) {
+                b.isAvailable = false;
+                System.out.println("You checked out: " + b.title);
+                return;
+            }
+        }
+        System.out.println("Book not available.");
+    }
+
+    public static void main(String[] args) {
+        books.add(new Book("1984", "George Orwell"));
+        books.add(new Book("The Hobbit", "J.R.R. Tolkien"));
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Library System - Available Books:");
+        displayBooks();
+
+        System.out.println("Enter the book title to checkout:");
+        String title = sc.nextLine();
+        checkoutBook(title);
+
+        System.out.println("\nUpdated Library:");
+        displayBooks();
+    }
+}

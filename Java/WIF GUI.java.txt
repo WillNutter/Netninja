@@ -1,0 +1,55 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+public class WeatherGUI extends JFrame {
+    private JTextField cityField = new JTextField(10);
+    private JButton fetchButton = new JButton("Get Weather");
+    private JLabel weatherLabel = new JLabel("Enter a city");
+
+    public WeatherGUI() {
+        setTitle("Weather Fetcher");
+        setSize(400, 200);
+        setLayout(new FlowLayout());
+
+        add(new JLabel("City:"));
+        add(cityField);
+        add(fetchButton);
+        add(weatherLabel);
+
+        fetchButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String city = cityField.getText();
+                weatherLabel.setText(getWeather(city));
+            }
+        });
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    public String getWeather(String city) {
+        try {
+            String apiKey = "YOUR_API_KEY"; // Replace with your OpenWeatherMap API Key
+            URL url = new URL("https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey + "&units=metric");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String response = br.readLine();
+            br.close();
+            return "Weather: " + response;
+        } catch (Exception e) {
+            return "Error fetching weather.";
+        }
+    }
+
+    public static void main(String[] args) {
+        new WeatherGUI();
+    }
+}

@@ -1,0 +1,23 @@
+import java.util.Scanner;
+import java.util.Random;
+
+public class GuessGame {
+    public static void playGame() {
+        Random rand = new Random();
+        int numberToGuess = rand.nextInt(100) + 1;
+        int guess;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Guess a number between 1 and 100:");
+
+        do {
+            guess = sc.nextInt();
+            if (guess < numberToGuess) System.out.println("Too low!");
+            else if (guess > numberToGuess) System.out.println("Too high!");
+            else System.out.println("Correct! You win!");
+        } while (guess != numberToGuess);
+    }
+
+    public static void main(String[] args) {
+        playGame();
+    }
+}

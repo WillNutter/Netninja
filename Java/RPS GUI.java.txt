@@ -1,0 +1,56 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Random;
+
+public class RockPaperScissorsGUI extends JFrame implements ActionListener {
+    private JButton rock, paper, scissors;
+    private JLabel resultLabel;
+
+    public RockPaperScissorsGUI() {
+        setTitle("Rock-Paper-Scissors");
+        setSize(400, 200);
+        setLayout(new FlowLayout());
+
+        rock = new JButton("Rock");
+        paper = new JButton("Paper");
+        scissors = new JButton("Scissors");
+        resultLabel = new JLabel("Choose your move!");
+
+        rock.addActionListener(this);
+        paper.addActionListener(this);
+        scissors.addActionListener(this);
+
+        add(rock);
+        add(paper);
+        add(scissors);
+        add(resultLabel);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        String[] options = {"Rock", "Paper", "Scissors"};
+        String computerChoice = options[new Random().nextInt(3)];
+        String playerChoice = e.getActionCommand();
+        String result;
+
+        if (playerChoice.equals(computerChoice)) {
+            result = "Draw!";
+        } else if ((playerChoice.equals("Rock") && computerChoice.equals("Scissors")) ||
+                   (playerChoice.equals("Scissors") && computerChoice.equals("Paper")) ||
+                   (playerChoice.equals("Paper") && computerChoice.equals("Rock"))) {
+            result = "You Win!";
+        } else {
+            result = "Computer Wins!";
+        }
+
+        resultLabel.setText("Computer: " + computerChoice + " | " + result);
+    }
+
+    public static void main(String[] args) {
+        new RockPaperScissorsGUI();
+    }
+}

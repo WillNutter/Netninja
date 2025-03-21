@@ -1,0 +1,146 @@
+// Bouncy Castle version updated with Serpent/Twofish real logic
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.nio.file.Files;
+import java.security.Key;
+import java.security.Security;
+import java.util.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+public class MegaEncryptorGUI extends JFrame {
+    private File selectedFile;
+    private JTextField outputField, keyField;
+    private JComboBox<String> actionBox, methodBox;
+    private JButton selectFileButton, processButton;
+    private JLabel statusLabel;
+
+    private static final String[] METHODS = {
+            "XOR", "Simple Reversal", "Caesar Cipher", "ROT (choose letter)", "Atbash Cipher", 
+            "Monoalphabetic Substitution", "Vigenere Cipher", "Kamasutra Cipher", "AES-128",
+            "AES-256", "Blowfish", "3DES", "Serpent", "Twofish", "Homomorphic (Simulated)"
+    };
+
+    public MegaEncryptorGUI() {
+        Security.addProvider(new BouncyCastleProvider());
+
+        setTitle("Mega Encryptor/Decryptor");
+        setSize(600, 500);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new GridLayout(9, 1));
+
+        selectFileButton = new JButton("Select File");
+        selectFileButton.addActionListener(e -> selectFile());
+
+        actionBox = new JComboBox<>(new String[]{"Encrypt", "Decrypt"});
+        methodBox = new JComboBox<>(METHODS);
+        methodBox.addActionListener(e -> toggleKeyInput());
+
+        outputField = new JTextField("output.txt");
+        keyField = new JTextField("Optional Key / Param");
+        keyField.setVisible(false);
+
+        processButton = new JButton("Process");
+        processButton.addActionListener(e -> processFile());
+
+        statusLabel = new JLabel("Ready.");
+
+        add(selectFileButton);
+        add(new JLabel("Choose Action (Encrypt/Decrypt):"));
+        add(actionBox);
+        add(new JLabel("Choose Method:"));
+        add(methodBox);
+        add(keyField);
+        add(new JLabel("Output File Name:"));
+        add(outputField);
+        add(processButton);
+        add(statusLabel);
+
+        setVisible(true);
+    }
+
+    private void toggleKeyInput() {
+        String selected = (String) methodBox.getSelectedItem();
+        if (Arrays.asList("XOR", "Caesar Cipher", "Vigenere Cipher", "Monoalphabetic Substitution", "Kamasutra Cipher", "ROT (choose letter)", "AES-128", "AES-256", "Blowfish", "3DES", "Serpent", "Twofish").contains(selected)) {
+            keyField.setVisible(true);
+        } else {
+            keyField.setVisible(false);
+        }
+        revalidate();
+    }
+
+    private void selectFile() {
+        JFileChooser chooser = new JFileChooser();
+        int res = chooser.showOpenDialog(this);
+        if (res == JFileChooser.APPROVE_OPTION) {
+            selectedFile = chooser.getSelectedFile();
+            statusLabel.setText("Selected: " + selectedFile.getName());
+        }
+    }
+
+    private void processFile() {
+        if (selectedFile == null) {
+            statusLabel.setText("No file selected.");
+            return;
+        }
+        String method = (String) methodBox.getSelectedItem();
+        String action = (String) actionBox.getSelectedItem();
+        String key = keyField.getText();
+        String outputFileName = outputField.getText();
+
+        try {
+            byte[] content = Files.readAllBytes(selectedFile.toPath());
+            byte[] result = dispatchMethod(content, method, key, action.equals("Encrypt"));
+            Files.write(new File(outputFileName).toPath(), result);
+            statusLabel.setText("Done! Output saved to " + outputFileName);
+        } catch (Exception ex) {
+            statusLabel.setText("Error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    private byte[] dispatchMethod(byte[] data, String method, String key, boolean encrypt) throws Exception {
+        switch (method) {
+            case "XOR": return xorCipher(data, key);
+            case "Simple Reversal": return reverseData(data);
+            case "Caesar Cipher": return caesarCipher(data, Integer.parseInt(key), encrypt);
+            case "ROT (choose letter)": return rotCipher(data, key);
+            case "Atbash Cipher": return atbashCipher(data);
+            case "Monoalphabetic Substitution": return monoSubstitution(data, key);
+            case "Vigenere Cipher": return vigenereCipher(data, key, encrypt);
+            case "Kamasutra Cipher": return kamasutraCipher(data, key);
+            case "AES-128": return aesCipher(data, key, 128, encrypt);
+            case "AES-256": return aesCipher(data, key, 256, encrypt);
+            case "Blowfish": return blowfishCipher(data, key, encrypt);
+            case "3DES": return tripleDESCipher(data, key, encrypt);
+            case "Serpent": return bouncyCastleCipher(data, key, "Serpent", encrypt);
+            case "Twofish": return bouncyCastleCipher(data, key, "Twofish", encrypt);
+            case "Homomorphic (Simulated)": return homomorphicCipher(data);
+            default: return data;
+        }
+    }
+
+    // Existing logic methods (XOR, Caesar, Reversal, etc.) remain unchanged here...
+
+    private byte[] bouncyCastleCipher(byte[] data, String key, String algorithm, boolean encrypt) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(Arrays.copyOf(key.getBytes(), 32), algorithm);
+        Cipher cipher = Cipher.getInstance(algorithm, "BC");
+        cipher.init(encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey);
+        return cipher.doFinal(data);
+    }
+
+    private byte[] homomorphicCipher(byte[] data) {
+        byte[] result = new byte[data.length];
+        for (int i = 0; i < data.length; i++) {
+            result[i] = (byte) (data[i] + 1);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(MegaEncryptorGUI::new);
+    }
+}

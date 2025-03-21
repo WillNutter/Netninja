@@ -1,0 +1,28 @@
+import java.util.ArrayList;
+
+class Item {
+    String name;
+    int quantity;
+
+    Item(String name, int quantity) {
+        this.name = name;
+        this.quantity = quantity;
+    }
+
+    public String toString() {
+        return name + " - Quantity: " + quantity;
+    }
+}
+
+public class InventorySystem {
+    public static void main(String[] args) {
+        ArrayList<Item> inventory = new ArrayList<>();
+        inventory.add(new Item("Apple", 10));
+        inventory.add(new Item("Banana", 20));
+
+        System.out.println("Inventory:");
+        for (Item item : inventory) {
+            System.out.println(item);
+        }
+    }
+}

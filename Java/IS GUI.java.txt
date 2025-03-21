@@ -1,0 +1,59 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+
+class Item {
+    String name;
+    int quantity;
+
+    Item(String name, int quantity) {
+        this.name = name;
+        this.quantity = quantity;
+    }
+
+    public String toString() {
+        return name + " - Quantity: " + quantity;
+    }
+}
+
+public class InventoryGUI extends JFrame {
+    private ArrayList<Item> inventory = new ArrayList<>();
+    private DefaultListModel<String> listModel = new DefaultListModel<>();
+    private JList<String> itemList = new JList<>(listModel);
+    private JTextField nameField = new JTextField(10);
+    private JTextField quantityField = new JTextField(5);
+    private JButton addButton = new JButton("Add Item");
+
+    public InventoryGUI() {
+        setTitle("Inventory System");
+        setSize(400, 300);
+        setLayout(new FlowLayout());
+
+        add(new JLabel("Name:"));
+        add(nameField);
+        add(new JLabel("Quantity:"));
+        add(quantityField);
+        add(addButton);
+        add(new JScrollPane(itemList));
+
+        addButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String name = nameField.getText();
+                int quantity = Integer.parseInt(quantityField.getText());
+                inventory.add(new Item(name, quantity));
+                listModel.addElement(name + " - " + quantity);
+                nameField.setText("");
+                quantityField.setText("");
+            }
+        });
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        new InventoryGUI();
+    }
+}

@@ -1,0 +1,197 @@
+# Windows 11 Hardening PowerShell Script with Interactive Menu and Enable/Disable Options
+
+function Show-Menu {
+    Clear-Host
+    Write-Host "================= Windows 11 Hardening Script ================="
+    Write-Host "1. Application Hardening"
+    Write-Host "2. Attack Surface Reduction (ASR Rules)"
+    Write-Host "3. Credential Protection"
+    Write-Host "4. Controlled Folder Access"
+    Write-Host "5. Early Launch Anti Malware"
+    Write-Host "6. User Account Control (UAC)"
+    Write-Host "7. Exploit Protection"
+    Write-Host "8. Local Administrator Password Solution (LAPS)"
+    Write-Host "9. Check Secure Boot"
+    Write-Host "10. Multi-Factor Authentication / Windows Hello"
+    Write-Host "11. Patching/Windows Updates"
+    Write-Host "12. Account Lockout"
+    Write-Host "13. Disable NetBIOS"
+    Write-Host "14. No LM Hash"
+    Write-Host "15. BitLocker Encryption"
+    Write-Host "16. PowerShell Execution Restriction"
+    Write-Host "17. Remote Desktop"
+    Write-Host "18. Exit"
+    Write-Host "=============================================================="
+}
+
+function Execute-Step {
+    param([int]$choice)
+
+    $action = Read-Host "Do you want to Enable or Disable this feature? Type 'Enable' or 'Disable'"
+
+    switch ($choice) {
+        1 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKCU:\Software\Microsoft\Office\16.0\Word\Security" -Name "VBAWarnings" -Value 4
+                Write-Host "Application Hardening Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKCU:\Software\Microsoft\Office\16.0\Word\Security" -Name "VBAWarnings" -Value 1
+                Write-Host "Application Hardening Disabled"
+            }
+        }
+        2 {
+            $ASRRule = "56a863a9-875e-4185-98a7-b882c64b5ce5"
+            if ($action -eq 'Enable') {
+                Add-MpPreference -AttackSurfaceReductionRules_Ids $ASRRule -AttackSurfaceReductionRules_Actions Enabled
+                Write-Host "ASR Rules Enabled"
+            } elseif ($action -eq 'Disable') {
+                Add-MpPreference -AttackSurfaceReductionRules_Ids $ASRRule -AttackSurfaceReductionRules_Actions Disabled
+                Write-Host "ASR Rules Disabled"
+            }
+        }
+        3 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "CachedLogonsCount" -Value "1"
+                Write-Host "Credential Protection Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "CachedLogonsCount" -Value "10"
+                Write-Host "Credential Protection Disabled"
+            }
+        }
+        4 {
+            if ($action -eq 'Enable') {
+                Set-MpPreference -EnableControlledFolderAccess Enabled
+                Write-Host "Controlled Folder Access Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-MpPreference -EnableControlledFolderAccess Disabled
+                Write-Host "Controlled Folder Access Disabled"
+            }
+        }
+        5 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\EarlyLaunch" -Name "DriverLoadPolicy" -Value 3
+                Write-Host "ELAM Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\EarlyLaunch" -Name "DriverLoadPolicy" -Value 8
+                Write-Host "ELAM Disabled"
+            }
+        }
+        6 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 1
+                Write-Host "UAC Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
+                Write-Host "UAC Disabled"
+            }
+        }
+        7 {
+            if ($action -eq 'Enable') {
+                Set-ProcessMitigation -System -Enable DEP, SEHOP
+                Write-Host "Exploit Protection Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ProcessMitigation -System -Disable DEP, SEHOP
+                Write-Host "Exploit Protection Disabled"
+            }
+        }
+        8 {
+            if ($action -eq 'Enable') {
+                Import-Module AdmPwd.PS
+                Set-AdmPwdAuditing -AuditedPrincipals "Administrators"
+                Write-Host "LAPS Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-AdmPwdAuditing -AuditedPrincipals ""
+                Write-Host "LAPS Disabled"
+            }
+        }
+        9 {
+            Confirm-SecureBootUEFI
+        }
+        10 {
+            if ($action -eq 'Enable') {
+                New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Settings\AllowSignInOptions" -Name "value" -PropertyType DWORD -Value 1
+                Write-Host "Windows Hello Enabled"
+            } elseif ($action -eq 'Disable') {
+                Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Settings\AllowSignInOptions" -Name "value"
+                Write-Host "Windows Hello Disabled"
+            }
+        }
+        11 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 0
+                Write-Host "Auto Updates Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 1
+                Write-Host "Auto Updates Disabled"
+            }
+        }
+        12 {
+            if ($action -eq 'Enable') {
+                net accounts /lockoutthreshold:5
+                Write-Host "Account Lockout Enabled"
+            } elseif ($action -eq 'Disable') {
+                net accounts /lockoutthreshold:0
+                Write-Host "Account Lockout Disabled"
+            }
+        }
+        13 {
+            if ($action -eq 'Enable') {
+                Set-NetAdapterAdvancedProperty -Name "Ethernet0" -RegistryKeyword "NetbiosOptions" -RegistryValue 2
+                Write-Host "NetBIOS Disabled"
+            } elseif ($action -eq 'Disable') {
+                Set-NetAdapterAdvancedProperty -Name "Ethernet0" -RegistryKeyword "NetbiosOptions" -RegistryValue 0
+                Write-Host "NetBIOS Enabled"
+            }
+        }
+        14 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "NoLMHash" -Value 1
+                Write-Host "NoLMHash Enabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "NoLMHash" -Value 0
+                Write-Host "NoLMHash Disabled"
+            }
+        }
+        15 {
+            if ($action -eq 'Enable') {
+                Enable-BitLocker -MountPoint "C:" -EncryptionMethod XtsAes256 -UsedSpaceOnly
+                Write-Host "BitLocker Enabled"
+            } elseif ($action -eq 'Disable') {
+                Disable-BitLocker -MountPoint "C:"
+                Write-Host "BitLocker Disabled"
+            }
+        }
+        16 {
+            if ($action -eq 'Enable') {
+                Set-ExecutionPolicy AllSigned -Scope LocalMachine -Force
+                Write-Host "Execution Restricted to Signed Scripts"
+            } elseif ($action -eq 'Disable') {
+                Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force
+                Write-Host "Execution Policy Unrestricted"
+            }
+        }
+        17 {
+            if ($action -eq 'Enable') {
+                Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 1
+                Write-Host "Remote Desktop Disabled"
+            } elseif ($action -eq 'Disable') {
+                Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+                Write-Host "Remote Desktop Enabled"
+            }
+        }
+        18 {
+            Write-Host "Exiting..."
+            exit
+        }
+        Default {
+            Write-Host "Invalid selection, please try again."
+        }
+    }
+}
+
+Do {
+    Show-Menu
+    $selection = Read-Host "Select an option"
+    Execute-Step -choice $selection
+    Pause
+} While ($selection -ne 18)

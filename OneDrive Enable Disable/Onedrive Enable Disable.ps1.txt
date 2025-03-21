@@ -1,0 +1,83 @@
+# OneDrive Control Script with Menu for Windows, Office, and Microsoft Environment
+# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass <scriptname>
+
+function Set-OneDriveSetting {
+    param (
+        [string]$Target,
+        [string]$Action
+    )
+
+    $enable = if ($Action -eq 'Enable') { 0 } else { 1 }
+
+    switch ($Target) {
+        "Windows" {
+            # Disable OneDrive Sync
+            $key = "HKLM:\Software\Policies\Microsoft\Windows\OneDrive"
+            New-Item -Path $key -Force | Out-Null
+            Set-ItemProperty -Path $key -Name "DisableFileSync" -Type DWord -Value $enable
+            Write-Host "OneDrive in Windows has been $Action`d." -ForegroundColor Green
+        }
+
+        "Office" {
+            $officeVersions = @("16.0", "15.0")  # Add versions as needed
+            foreach ($version in $officeVersions) {
+                $key = "HKCU:\Software\Microsoft\Office\$version\Common\General"
+                New-Item -Path $key -Force | Out-Null
+                $val = if ($Action -eq 'Enable') { 1 } else { 0 }
+                Set-ItemProperty -Path $key -Name "PreferCloudSaveLocations" -Type DWord -Value $val
+            }
+            Write-Host "OneDrive integration in Office apps has been $Action`d." -ForegroundColor Green
+        }
+
+        "MicrosoftEnvironment" {
+            # Prevent OneDrive auto config (wider environment)
+            $key = "HKLM:\Software\Policies\Microsoft\OneDrive"
+            New-Item -Path $key -Force | Out-Null
+            Set-ItemProperty -Path $key -Name "PreventAutoConfig" -Type DWord -Value $enable
+            Write-Host "OneDrive auto-configuration in Microsoft environment has been $Action`d." -ForegroundColor Green
+        }
+
+        "All" {
+            Set-OneDriveSetting -Target "Windows" -Action $Action
+            Set-OneDriveSetting -Target "Office" -Action $Action
+            Set-OneDriveSetting -Target "MicrosoftEnvironment" -Action $Action
+        }
+    }
+}
+
+function Show-Menu {
+    Clear-Host
+    Write-Host "================= OneDrive Management Script =================" -ForegroundColor Cyan
+    Write-Host "1. Toggle OneDrive in Windows"
+    Write-Host "2. Toggle OneDrive in Office Apps (Word, Excel, PowerPoint)"
+    Write-Host "3. Toggle OneDrive in Microsoft Environment (AutoConfig)"
+    Write-Host "4. Toggle ALL (Windows, Office, Microsoft Environment)"
+    Write-Host "5. Exit"
+    Write-Host "=============================================================="
+}
+
+do {
+    Show-Menu
+    $choice = Read-Host "Select an option (1-5)"
+
+    if ($choice -ge 1 -and $choice -le 4) {
+        $actionChoice = Read-Host "Would you like to ENABLE or DISABLE OneDrive in this area? (Enable/Disable)"
+        if ($actionChoice -in @("Enable", "Disable")) {
+            switch ($choice) {
+                1 { Set-OneDriveSetting -Target "Windows" -Action $actionChoice }
+                2 { Set-OneDriveSetting -Target "Office" -Action $actionChoice }
+                3 { Set-OneDriveSetting -Target "MicrosoftEnvironment" -Action $actionChoice }
+                4 { Set-OneDriveSetting -Target "All" -Action $actionChoice }
+            }
+        } else {
+            Write-Host "Invalid action. Please type 'Enable' or 'Disable'." -ForegroundColor Yellow
+        }
+        Pause
+    } elseif ($choice -eq 5) {
+        Write-Host "Exiting... Goodbye!" -ForegroundColor Cyan
+        break
+    } else {
+        Write-Host "Invalid selection. Please choose a valid option (1-5)." -ForegroundColor Yellow
+        Pause
+    }
+} while ($true)

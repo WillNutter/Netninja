@@ -1,0 +1,127 @@
+# This is a stock monitor, tracker, and trader. It is menu
+ # driven, it has a graph display of the current stock,      
+# and will cleanly exit
+# pip install yfinance matplotlib
+
+import yfinance as yf
+import time
+from datetime import datetime
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+def get_current_price(ticker_symbol):
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        data = ticker.history(period='1m')
+        if data.empty:
+            return None
+        return data['Close'][-1]
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return None
+
+def plot_live_chart(times, prices, ticker_symbol):
+    plt.clf()
+    plt.title(f"{ticker_symbol.upper()} Live Price Chart")
+    plt.xlabel("Time")
+    plt.ylabel("Price ($)")
+    plt.gcf().autofmt_xdate()
+    plt.grid(True)
+
+    plt.plot(times, prices, marker='o', linestyle='-')
+    plt.pause(0.1)
+
+def monitor_stock(ticker_symbol):
+    print(f"\n[Monitoring Mode] Tracking {ticker_symbol} price. Press Ctrl+C to return to menu.")
+    prices = []
+    times = []
+
+    plt.ion()
+    try:
+        while True:
+            price = get_current_price(ticker_symbol)
+            now = datetime.now()
+
+            if price:
+                times.append(now)
+                prices.append(price)
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] {ticker_symbol.upper()} Price: ${price:.2f}")
+                plot_live_chart(times, prices, ticker_symbol)
+            else:
+                print("Price not available.")
+
+            time.sleep(15)
+    except KeyboardInterrupt:
+        plt.ioff()
+        print("\nReturning to main menu...")
+
+def trade_stock(ticker_symbol):
+    buy_threshold = float(input("Enter BUY threshold price: $"))
+    sell_threshold = float(input("Enter SELL threshold price: $"))
+    interval = int(input("Enter check interval in seconds: "))
+    holding_stock = False
+    buy_price = 0.0
+    prices = []
+    times = []
+
+    print(f"\n[Trading Mode] Watching {ticker_symbol}. Buy below ${buy_threshold}, Sell above ${sell_threshold}.")
+    print("Press Ctrl+C to return to menu.\n")
+
+    plt.ion()
+    try:
+        while True:
+            price = get_current_price(ticker_symbol)
+            now = datetime.now()
+
+            if price:
+                times.append(now)
+                prices.append(price)
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] {ticker_symbol.upper()} Price: ${price:.2f}")
+                plot_live_chart(times, prices, ticker_symbol)
+
+                if price < buy_threshold and not holding_stock:
+                    holding_stock = True
+                    buy_price = price
+                    print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] --> Simulated BUY at ${price:.2f}")
+
+                elif price > sell_threshold and holding_stock:
+                    holding_stock = False
+                    sell_price = price
+                    profit = sell_price - buy_price
+                    print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] --> Simulated SELL at ${price:.2f} | Profit: ${profit:.2f}")
+            else:
+                print("Price not available.")
+
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        plt.ioff()
+        print("\nReturning to main menu...")
+
+def main():
+    print("Welcome to the Stock Monitor/Trader with Live Chart (Simulated)")
+
+    ticker_symbol = input("Enter the stock ticker symbol (e.g. AAPL, TSLA): ").strip().upper()
+
+    while True:
+        print("\n--- MENU ---")
+        print("1. Monitor stock price with live chart")
+        print("2. Simulate trading with chart")
+        print("3. Change stock ticker")
+        print("4. Exit")
+
+        choice = input("Select an option: ")
+
+        if choice == '1':
+            monitor_stock(ticker_symbol)
+        elif choice == '2':
+            trade_stock(ticker_symbol)
+        elif choice == '3':
+            ticker_symbol = input("Enter new stock ticker: ").strip().upper()
+        elif choice == '4':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+if __name__ == "__main__":
+    main()

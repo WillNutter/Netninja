@@ -1,0 +1,44 @@
+# This stock trading script provides closer to real time than
+# Yahoo Finance does. But it might violate Google Term of # Service
+
+import requests
+from bs4 import BeautifulSoup
+import time
+from datetime import datetime
+
+STOCK_SYMBOL = 'AAPL'
+BUY_THRESHOLD = 170.00
+SELL_THRESHOLD = 180.00
+holding_stock = False
+headers = {
+    'User-Agent': 'Mozilla/5.0'
+}
+
+def get_stock_price(symbol):
+    url = f'https://www.google.com/search?q={symbol}+stock'
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    try:
+        price = soup.find('div', class_='YMlKec fxKbKc').text
+        return float(price.replace('$', '').replace(',', ''))
+    except:
+        return None
+
+while True:
+    price = get_stock_price(STOCK_SYMBOL)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if price:
+        print(f"[{now}] {STOCK_SYMBOL} Price: ${price:.2f}")
+
+        if price < BUY_THRESHOLD and not holding_stock:
+            holding_stock = True
+            print(f"--> Simulated BUY at ${price:.2f}")
+        elif price > SELL_THRESHOLD and holding_stock:
+            holding_stock = False
+            print(f"--> Simulated SELL at ${price:.2f}")
+    else:
+        print("Could not retrieve price.")
+
+    time.sleep(30)

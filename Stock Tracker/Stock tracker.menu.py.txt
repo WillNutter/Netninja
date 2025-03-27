@@ -1,0 +1,93 @@
+# This script uses the slower Yahoo Finance method but 
+# It won't get you banned but their Terms of Services.
+# It does include a menu and function driven buy it.
+
+# pip install yfinance
+
+import yfinance as yf
+import time
+from datetime import datetime
+
+def get_current_price(ticker_symbol):
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        data = ticker.history(period='1m')
+        return data['Close'][-1]
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return None
+
+def monitor_stock(ticker_symbol):
+    print(f"\n[Monitoring Mode] Tracking {ticker_symbol} price. Press Ctrl+C to return to menu.")
+    try:
+        while True:
+            price = get_current_price(ticker_symbol)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if price:
+                print(f"[{now}] {ticker_symbol.upper()} Price: ${price:.2f}")
+            else:
+                print("Price not available.")
+            time.sleep(15)
+    except KeyboardInterrupt:
+        print("\nReturning to main menu...")
+
+def trade_stock(ticker_symbol):
+    buy_threshold = float(input("Enter BUY threshold price: $"))
+    sell_threshold = float(input("Enter SELL threshold price: $"))
+    holding_stock = False
+    buy_price = 0.0
+
+    print(f"\n[Trading Mode] Watching {ticker_symbol}. Buy below ${buy_threshold}, Sell above ${sell_threshold}.")
+    print("Press Ctrl+C to return to menu.\n")
+
+    try:
+        while True:
+            price = get_current_price(ticker_symbol)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            if price:
+                print(f"[{now}] {ticker_symbol.upper()} Price: ${price:.2f}")
+
+                if price < buy_threshold and not holding_stock:
+                    holding_stock = True
+                    buy_price = price
+                    print(f"--> Simulated BUY at ${price:.2f}")
+
+                elif price > sell_threshold and holding_stock:
+                    holding_stock = False
+                    sell_price = price
+                    profit = sell_price - buy_price
+                    print(f"--> Simulated SELL at ${price:.2f} | Profit: ${profit:.2f}")
+            else:
+                print("Price not available.")
+
+            time.sleep(15)
+
+    except KeyboardInterrupt:
+        print("\nReturning to main menu...")
+
+def main():
+    print("Welcome to the Stock Monitor/Trader (Simulated)")
+
+    ticker_symbol = input("Enter the stock ticker symbol (e.g. AAPL, TSLA): ").strip().upper()
+
+    while True:
+        print("\n--- MENU ---")
+        print("1. Monitor stock price only")
+        print("2. Simulate trading (buy/sell)")
+        print("3. Exit")
+
+        choice = input("Select an option: ")
+
+        if choice == '1':
+            monitor_stock(ticker_symbol)
+        elif choice == '2':
+            trade_stock(ticker_symbol)
+        elif choice == '3':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+if __name__ == "__main__":
+    main()

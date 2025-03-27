@@ -1,0 +1,48 @@
+# This Python script is setup to current monitor, buy, sell
+# and essentially trade stock. 
+# This is limited by the 15 minute window refresh on Yahoo # Finance stock prices
+
+# pip install yfinance
+
+import yfinance as yf
+import time
+from datetime import datetime
+
+# --- Config ---
+STOCK_SYMBOL = 'AAPL'
+BUY_THRESHOLD = 170.00
+SELL_THRESHOLD = 180.00
+CHECK_INTERVAL = 60  # seconds
+
+# --- Simulated state ---
+holding_stock = False
+buy_price = 0.0
+
+print(f"Starting simulated trading bot for {STOCK_SYMBOL}...")
+
+while True:
+    try:
+        # Get current price
+        ticker = yf.Ticker(STOCK_SYMBOL)
+        data = ticker.history(period="1m")
+        current_price = data['Close'][-1]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        print(f"[{now}] Current {STOCK_SYMBOL} price: ${current_price:.2f}")
+
+        if current_price < BUY_THRESHOLD and not holding_stock:
+            holding_stock = True
+            buy_price = current_price
+            print(f"--> Simulated BUY at ${buy_price:.2f}")
+
+        elif current_price > SELL_THRESHOLD and holding_stock:
+            holding_stock = False
+            sell_price = current_price
+            profit = sell_price - buy_price
+            print(f"--> Simulated SELL at ${sell_price:.2f} | Profit: ${profit:.2f}")
+
+        time.sleep(CHECK_INTERVAL)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        time.sleep(10)
